@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ModalCreate } from "../ModalCreate";
+import ModalCreate from "../ModalCreate";
 import  ModalImport  from "../ModalImport";
 import { PrimaryButton } from "../../styles";
 import * as S from "./styles";

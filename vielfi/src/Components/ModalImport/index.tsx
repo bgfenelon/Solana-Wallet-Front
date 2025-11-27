@@ -1,56 +1,60 @@
-// src/Components/ModalImport/index.tsx
 import { useState } from "react";
 import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
+import { postJSON } from "../../services/api";
+import { importAnyWallet } from "../../utils/walletImport";
 import { useAuth } from "../../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
 
-interface ModalProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-function ModalImport({ open, onClose }: ModalProps) {
-  const [data, setData] = useState("");
-  const { importWallet } = useAuth();
-  const navigate = useNavigate();
+export default function ModalImport({ open, onClose }) {
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const { refresh } = useAuth();
 
   if (!open) return null;
 
   async function handleImport() {
+
+
     try {
-      await importWallet(data.trim());
-      onClose();
-      navigate("/wallet");
-    } catch (e: any) {
-      console.error("Erro importWallet:", e);
-      // mostra a mensagem que o backend retornar, se existir
-      const msg = e?.message || "Erro ao importar wallet";
-      alert(msg);
+      importAnyWallet(input);
+
+      await postJSON("/auth/import", { input });
+
+      await refresh();
+
+      window.location.href = "/wallet";
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Import failed");
     }
+  }
+
+  function copy() {
+    navigator.clipboard.writeText(input);
   }
 
   return (
     <S.Overlay onClick={onClose}>
       <S.ModalContainer onClick={(e) => e.stopPropagation()}>
-        <h2>Import Wallet</h2>
-        <p>Enter private key, array or seed phrase:</p>
+        <h2>Import Wallet (Solana)</h2>
 
+        <label>Private Key / Seed Phrase</label>
         <S.TextArea
-          value={data}
-          onChange={(e) => setData(e.target.value)}
-          placeholder="seed phrase OR base58 private key OR [1,2,3,...]"
+          placeholder="Paste your seed phrase or private key"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
         />
+
+
+
+        {error && <S.ErrorMsg>{error}</S.ErrorMsg>}
 
         <S.Actions>
           <S.SecondaryButton onClick={onClose}>Cancel</S.SecondaryButton>
-          <PrimaryButton disabled={!data.trim()} onClick={handleImport}>
-            Import →
-          </PrimaryButton>
+          <PrimaryButton onClick={handleImport}>Import →</PrimaryButton>
         </S.Actions>
       </S.ModalContainer>
     </S.Overlay>
   );
 }
-
-export default ModalImport;

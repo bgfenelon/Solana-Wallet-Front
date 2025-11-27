@@ -1,42 +1,26 @@
-import { createContext, useContext, useState } from "react";
-import { postJSON, getJSON } from "../services/api";
+// useAuth.tsx
+import { useEffect, useState } from "react";
+import { getJSON } from "../services/api";
 
-const AuthContext = createContext(null);
-
-export function AuthProvider({ children }) {
+export function useAuth() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  async function importWallet(inputText) {
+  async function fetchSession() {
     try {
-      const res = await postJSON("/auth/import", {
-        input: inputText.trim(),
-      });
-
-      setUser({
-        walletPubkey: res.walletPubkey,
-      });
-
-      return true;
+      const res = await getJSON("/session/me");
+      setUser(res.user);
     } catch (err) {
-      console.error("Import wallet error:", err);
-      throw err;
+      console.warn("Nenhuma sessão ativa");
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function loadSession() {
-    try {
-      const session = await getJSON("/session/me");
-      if (session?.user) setUser(session.user);
-    } catch (_) {}
-  }
+  useEffect(() => {
+    fetchSession();
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, importWallet, loadSession }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
+  return { user, loading, refresh: fetchSession };
 }

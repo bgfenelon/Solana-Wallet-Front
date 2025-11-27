@@ -3,58 +3,76 @@ import styled from "styled-components";
 export const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0,0,0,0.75);
   backdrop-filter: blur(6px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
+  display:flex; align-items:center; justify-content:center;
+  z-index:999;
 `;
 
 export const ModalContainer = styled.div`
   background: var(--secondary);
   border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
-  padding: 32px;
-  border-radius: 16px;
-  max-width: 460px;
+  padding: 28px;
+  border-radius: 14px;
   width: 100%;
-  box-shadow:
-    0 0 30px rgba(157, 78, 221, 0.3),
-    inset 0 0 20px rgba(157, 78, 221, 0.1);
+  max-width: 480px;
 
   h2 {
-    color: var(--foreground);
-    margin-bottom: 12px;
-    font-size: 1.8rem;
+    margin-bottom: 16px;
   }
 
-  p {
-    color: var(--muted-foreground);
-    margin-bottom: 16px;
+  label {
+    font-size: 14px;
+    opacity: 0.9;
   }
 `;
 
 export const TextArea = styled.textarea`
   width: 100%;
-  padding: 16px;
-  height: 120px;
-  border-radius: 10px;
-  background: #131313;
+  min-height: 120px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #111;
   border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   color: var(--foreground);
-  font-size: 1rem;
-  resize: none;
-  margin-bottom: 24px;
+  margin: 8px 0 6px;
+`;
 
-  &:focus {
-    outline: 2px solid var(--primary);
+export const CopyRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+`;
+
+export const CopyButton = styled.button`
+  padding: 6px 12px;
+  background: var(--primary);
+  border: none;
+  color: white;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  &:hover { opacity: 0.85; }
+`;
+
+export const ConfirmRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  input {
+    transform: scale(1.2);
   }
 `;
 
+export const ErrorMsg = styled.div`
+  color: #ff3b3b;
+  margin-bottom: 10px;
+`;
+
 export const Actions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  display:flex; gap:12px; justify-content:flex-end;
 `;
 
 export const SecondaryButton = styled.button`
@@ -64,9 +82,5 @@ export const SecondaryButton = styled.button`
   color: var(--foreground);
   border-radius: 8px;
   cursor: pointer;
-  transition: 0.25s;
-
-  &:hover {
-    background: color-mix(in oklab, var(--primary) 10%, transparent);
-  }
+  &:hover { background: color-mix(in oklab, var(--primary) 10%, transparent); }
 `;

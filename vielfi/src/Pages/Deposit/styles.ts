@@ -1,9 +1,12 @@
+// src/Pages/Deposit/styles.ts
 import styled from "styled-components";
 import { fontSizes } from "../../styles";
 
 export const Container = styled.section`
   min-height: 100vh;
-  padding: 140px 24px 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #000, #1a0a2e, #000);
 `;
 
@@ -41,13 +44,18 @@ export const QRWrapper = styled.div`
   display: flex;
   justify-content: center;
   margin-bottom: 28px;
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
 
-  box-shadow: 
-    0 0 15px rgba(157, 78, 221, 0.4),
-    inset 0 0 15px rgba(157, 78, 221, 0.1);
+
+  SVG{
+    border: 10px solid  white;
+  border-radius: 12px;
+
+  }
 `;
 
 export const AddressBox = styled.div`
+
   margin-top: 20px;
   padding: 18px;
   border-radius: 12px;
@@ -68,8 +76,32 @@ export const AddressBox = styled.div`
   }
 `;
 
+export const CopyButton = styled.button`
+  margin-top: 20px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #b026ff, #7d00ff, #5500c8);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 0 18px rgba(157, 78, 221, 0.35);
+`;
+
 export const InfoText = styled.p`
   margin-top: 20px;
   font-size: ${fontSizes.small};
   color: var(--muted-foreground);
+`;
+
+export const ErrorBox = styled.div`
+  margin: 24px auto;
+  max-width: 480px;
+  background: rgba(255, 20, 20, 0.04);
+  border: 1px solid rgba(255, 60, 60, 0.12);
+  color: #ffb3b3;
+  padding: 16px;
+  border-radius: 12px;
 `;

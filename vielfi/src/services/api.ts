@@ -1,30 +1,28 @@
 // src/services/api.ts
-const BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001";
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 export async function getJSON(path: string) {
-  const url = BASE + path;
-  const resp = await fetch(url, {
+  const res = await fetch(API_URL + path, {
     method: "GET",
-    credentials: "include", // se usar cookies/sessão
+    credentials: "include" // <-- obrigatório
   });
-  if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(`GET ${path} falhou: ${txt}`);
-  }
-  return resp.json();
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(text);
+
+  return JSON.parse(text);
 }
 
 export async function postJSON(path: string, body: any) {
-  const url = BASE + path;
-  const resp = await fetch(url, {
+  const res = await fetch(API_URL + path, {
     method: "POST",
-    credentials: "include", // se usar cookies/sessão
+    credentials: "include", // <-- obrigatório
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(`POST ${path} falhou: ${txt}`);
-  }
-  return resp.json();
+
+  const text = await res.text();
+  if (!res.ok) throw new Error(text);
+
+  return JSON.parse(text);
 }
