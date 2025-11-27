@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ModalCreate } from "../ModalCreate";
-import { ModalImport } from "../ModalImport";
+import  ModalImport  from "../ModalImport";
 import { PrimaryButton } from "../../styles";
 import * as S from "./styles";
 import { CheckCircle2 } from "lucide-react";

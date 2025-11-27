@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { fontSizes, sizes } from "../../styles";
 
 export const MainContainer = styled.div`
 z-index: 10;
@@ -19,7 +18,7 @@ background-color: rgba(0, 0, 0, 0.8);
 >div{
     height: 100%;
     width: 100%;
-    max-width: ${sizes.maxWidth};
+    max-width: 1024px;
     padding: 0 5% 0 5%;
     margin: auto;
 }
@@ -37,7 +36,7 @@ export const Logo = styled.a`
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    font-size: ${fontSizes.large};
+    font-size: 20px;
     
     span{
         color: #FFFFFF;

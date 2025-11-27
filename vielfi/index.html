@@ -11,17 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Great+Vibes&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
     <title>vielfi</title>
-
-    <!-- SOLANA + SPL BUFFER POLYFILLS -->
-    <script>
-      // Necessário para libs Node-like rodarem no browser
-      window.global = window;
-    </script>
-
-    <script type="module">
-      import { Buffer } from "buffer";
-      window.Buffer = Buffer;   // garante que SPL-Token funcione
-    </script>
   </head>
 
   <body>

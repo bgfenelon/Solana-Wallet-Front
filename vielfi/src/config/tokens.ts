@@ -1,25 +1,10 @@
 export const TOKENS = {
-  SOL: {
-    symbol: "SOL",
-    name: "Solana",
-    decimals: 9,
-    mint: null, // token nativo
-    isNative: true,
+  USDT: {
+    symbol: "USDT",
+    mint: "Es9vMFrzaCERt3ENhPZLM8xYZ2Njkqrsmr4Z1tYhRZtT" // mint real do USDT (ou sua mint fake)
   },
-
-  USDC: {
-    symbol: "USDC",
-    name: "USD Coin",
-    decimals: 6,
-    mint: "Es9vMFrzaCERz9fF7kbZwiRBK1tZ3xCynNw8E8thdGJ",
-    isNative: false,
-  },
-
-  VEIL: {
-    symbol: "VEIL",
-    name: "Veil Token",
-    decimals: 9,
-    mint: "2J8bP35XdfmRZCTj7WUdZ4TQGqaXcFj4kd6rpLYxpump", // trocar depois
-    isNative: false,
-  },
+  TEST: {
+    symbol: "TEST",
+    mint: "2J8bP35XdfmRZCTj7WUdZ4TQGqaXcFj4kd6rpLYxpump" // sua mint do token TEST
+  }
 };

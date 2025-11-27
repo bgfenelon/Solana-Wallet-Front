@@ -1,115 +1,176 @@
-import { useEffect, useState } from "react";
-import { postJSON } from "../../services/api";
+import React, { useEffect, useState } from "react";
+import * as S from "./styles";
 import {
-  Container,
-  Card,
-  Title,
-  AddressText,
-  BalanceBox,
-  TokenList,
-  TokenItem,
-  Actions,
-  SecondaryButton
-} from "./styles";
-import { useNavigate } from "react-router-dom";
-import { TOKENS } from "../../config/tokens";
+  Shield,
+  Eye,
+  EyeOff,
+  TrendingUp,
+  Download,
+  ArrowRightLeft,
+  Wallet
+} from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import { getJSON, postJSON } from "../../services/api";
 
-type TokenAccount = {
-  mint: string;
-  amount: string;
-  decimals: number;
-  uiAmount: number;
-};
+export default function WalletPage() {
+  const { walletAddress, loading, refresh } = useAuth();
 
-export function Wallet() {
-  const [loading, setLoading] = useState(true);
-  const [pubkey, setPubkey] = useState("");
-  const [sol, setSol] = useState(0);
-  const [tokens, setTokens] = useState<TokenAccount[]>([]);
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [balanceSOL, setBalanceSOL] = useState<number | null>(null);
+  const [tokens, setTokens] = useState<any[]>([]);
+  const [showTokens, setShowTokens] = useState(false);
 
-  const navigate = useNavigate();
-
+  // ------------ CARREGAR SALDO (MESMA LÓGICA DO DEPOSIT) ----------------
   useEffect(() => {
     async function load() {
       try {
-        const userId = import.meta.env.VITE_USER_ID;
-        const res = await postJSON("/user/balance", { userId });
+        const session = await getJSON("/session/me");
 
-        setPubkey(res.pubkey);
-        setSol(res.sol);
-        setTokens(res.tokens || []);
+        if (!session.user?.walletPubkey) {
+          console.error("No pubkey in session");
+          return;
+        }
+
+        const res = await postJSON("/user/balance", {
+          userPubkey: session.user.walletPubkey,
+        });
+
+        setBalanceSOL(res.solBalance ?? 0);
+        setTokens(res.tokens ?? []);
       } catch (err) {
-        console.error("Failed to load wallet:", err);
+        console.error("Wallet error:", err);
       }
-      setLoading(false);
     }
 
     load();
+    const int = setInterval(load, 10_000);
+    return () => clearInterval(int);
   }, []);
 
-  // Função para resolver nome do token baseado na mint
-  function resolveTokenSymbol(mint: string): string {
-    const entry = Object.values(TOKENS).find((t) => t.mint === mint);
-    return entry ? entry.symbol : mint.slice(0, 4) + "...";
-  }
-
-  if (loading) {
-    return (
-      <Container>
-        <Card>
-          <Title>Wallet</Title>
-          <p style={{ color: "#ccc" }}>Loading...</p>
-        </Card>
-      </Container>
-    );
-  }
-
   return (
-    <Container>
-      <Card>
-        <Title>Your Wallet</Title>
+    <S.PageContainer className="dark">
+      <S.Content>
+        <S.Header>
+          <div className="brand">
+            <img src="/logo.png" alt="logo" />
+            <h1>Veilfi</h1>
+          </div>
+        </S.Header>
 
-        <AddressText>{pubkey}</AddressText>
+        {/* ---------------------- BALANCE CARD ---------------------- */}
+        <S.BalanceCard>
+          <S.BalanceHeader>
+            <div className="left">
+              <div className="iconBox">
+                <Shield className="shield" />
+              </div>
+              <div>
+                <div className="title">Shielded Balance</div>
+                <div className="subtitle">Private funds</div>
+              </div>
+            </div>
 
-        {/* SALDO SOL */}
-        <BalanceBox>
-          <strong>SOL Balance</strong>
-          <p>{sol.toFixed(4)} SOL</p>
-        </BalanceBox>
+            <div className="right">
+              <button onClick={() => setIsBalanceVisible(!isBalanceVisible)}>
+                {isBalanceVisible ? <Eye className="eye" /> : <EyeOff className="eye" />}
+              </button>
+            </div>
+          </S.BalanceHeader>
 
-        {/* LISTA DE TOKENS */}
-        <h3 style={{ color: "var(--foreground)", marginTop: "30px" }}>
-          Tokens (SPL)
-        </h3>
+          {/* VALOR DO SALDO */}
+          <S.BalanceValue>
+            {isBalanceVisible
+              ? balanceSOL !== null
+                ? balanceSOL.toFixed(4)
+                : loading
+                ? "…"
+                : "0.0000"
+              : "****"}
+            <span className="currency">SOL</span>
+          </S.BalanceValue>
 
-        <TokenList>
-          {tokens.length === 0 ? (
-            <p style={{ color: "#888" }}>No SPL tokens found.</p>
-          ) : (
-            tokens.map((t) => (
-              <TokenItem key={t.mint}>
-                <strong>{resolveTokenSymbol(t.mint)}</strong>
-                <span>{t.uiAmount}</span>
-              </TokenItem>
-            ))
+          {/* Botão para mostrar tokens */}
+          <div style={{ marginTop: 10, textAlign: "center" }}>
+            <button
+              onClick={() => setShowTokens(!showTokens)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "#9d4edd",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                margin: "0 auto",
+                fontSize: "0.95rem",
+              }}
+            >
+              <Wallet size={18} />
+              {showTokens ? "Hide tokens" : "Show tokens"}
+            </button>
+          </div>
+
+          {/* LISTA DE TOKENS */}
+          {showTokens && (
+            <div style={{ marginTop: 15, padding: "10px 0" }}>
+              {tokens.length === 0 ? (
+                <p style={{ color: "#aaa", textAlign: "center" }}>
+                  Nenhum token encontrado
+                </p>
+              ) : (
+                tokens.map((t, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "8px 14px",
+                      background: "rgba(255, 255, 255, 0.05)",
+                      borderRadius: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div>
+                      <strong>{t.mint.slice(0, 6)}...</strong>
+                    </div>
+                    <div style={{ color: "#9d4edd" }}>
+                      {t.uiAmount ?? 0}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           )}
-        </TokenList>
+        </S.BalanceCard>
 
-        {/* BOTÕES */}
-        <Actions>
-          <SecondaryButton onClick={() => navigate("/deposit")}>
-            Deposit
-          </SecondaryButton>
+        {/* ---------------------- ACTION BUTTONS ---------------------- */}
+        <S.ActionGrid>
+          <S.ActionButton to="/wallet">
+            <S.ActionIcon className="purple">
+              <TrendingUp />
+            </S.ActionIcon>
+            <div className="title">Send</div>
+            <div className="subtitle">Transfer privately</div>
+          </S.ActionButton>
 
-          <SecondaryButton onClick={() => navigate("/withdraw")}>
-            Withdraw
-          </SecondaryButton>
+          <S.ActionButton to="/swap">
+            <S.ActionIcon className="purple">
+              <ArrowRightLeft />
+            </S.ActionIcon>
+            <div className="title">Swap</div>
+            <div className="subtitle">Exchange tokens</div>
+          </S.ActionButton>
 
-          <SecondaryButton onClick={() => navigate("/activity")}>
-            Activity
-          </SecondaryButton>
-        </Actions>
-      </Card>
-    </Container>
+          <S.ActionButton to="/deposit">
+            <S.ActionIcon className="purple">
+              <Download />
+            </S.ActionIcon>
+            <div className="title">Receive</div>
+            <div className="subtitle">Get securely</div>
+          </S.ActionButton>
+        </S.ActionGrid>
+      </S.Content>
+    </S.PageContainer>
   );
 }
+vei

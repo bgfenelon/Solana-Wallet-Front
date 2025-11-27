@@ -6,18 +6,19 @@ import { sizes, fontSizes } from "../../styles";
 /* Container principal do Hero */
 export const MainHeroContent = styled.section`
   position: relative;
-  padding-top: 120px; 
+  padding-top: 150px; 
   padding-bottom: 20%;
   padding-left: 6%;
   padding-right: 6%;
   width: 100%;
   overflow: hidden;
+  min-height: 90vh;
 
   /* Gradiente principal */
   background: linear-gradient(
     135deg,
     #000000 0%,
-    #1a0a2e 50%,
+    #360b69ff 50%,
     #000000 100%
   );
   height: calc(100vh - 120px);
@@ -28,6 +29,7 @@ export const BackgroundGrid = styled.div`
   position: absolute;
   inset: 0;
   opacity: 0.2;
+  
 
   > div {
     position: absolute;
