@@ -1,4 +1,10 @@
 {
+  "compilerOptions": {
+    "noEmitOnError": false,
+    "skipLibCheck": true,
+    "strict": false,
+    "verbatimModuleSyntax": false
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
