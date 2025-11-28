@@ -1,16 +1,17 @@
-// vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+
+// 🔥 Removido qualquer polyfill, pq quebra tudo no Vite moderno
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // Garante compatibilidade com libs antigas que tentam usar Buffer
+      // Se precisar do buffer: 
       buffer: "buffer/",
     },
   },
-  optimizeDeps: {
-    include: ["buffer"],
-  },
+  define: {
+    global: {},
+  }
 });

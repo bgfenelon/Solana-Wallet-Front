@@ -1,10 +1,10 @@
-import { postJSON } from "./api";
+// server/routes/swap.js
+const express = require("express");
+const router = express.Router();
+const swapController = require("../controllers/swapController");
 
-export async function executeSwap(body: {
-  userPubkey: string;
-  fromMint: string;
-  toMint: string;
-  amount: number;
-}) {
-  return await postJSON("/swap/execute", body);
-}
+router.get("/price", swapController.getPrice);
+router.post("/buy", swapController.buy);
+router.post("/sell", swapController.sell);
+
+module.exports = router;

@@ -1,28 +1,19 @@
-// src/services/api.ts
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API = "http://localhost:3001";
 
-export async function getJSON(path: string) {
-  const res = await fetch(API_URL + path, {
-    method: "GET",
-    credentials: "include" // <-- obrigatório
+export async function createOrder(usdAmount, buyerWallet) {
+  const res = await fetch(`${API}/swap/buy/init`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ usdAmount, buyer: buyerWallet })
   });
-
-  const text = await res.text();
-  if (!res.ok) throw new Error(text);
-
-  return JSON.parse(text);
+  return res.json();
 }
 
-export async function postJSON(path: string, body: any) {
-  const res = await fetch(API_URL + path, {
+export async function confirmOrder(orderId, paymentSignature) {
+  const res = await fetch(`${API}/swap/buy/confirm`, {
     method: "POST",
-    credentials: "include", // <-- obrigatório
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ orderId, paymentSignature })
   });
-
-  const text = await res.text();
-  if (!res.ok) throw new Error(text);
-
-  return JSON.parse(text);
+  return res.json();
 }

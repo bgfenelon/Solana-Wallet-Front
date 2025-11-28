@@ -1,78 +1,91 @@
 // src/Components/ModalCreate/index.tsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
 import { useNavigate } from "react-router-dom";
 
-import * as bip39 from "@scure/bip39";
-import { wordlist } from "@scure/bip39/wordlists/english.js";
-import { HDKey } from "@scure/bip32";
+import { generateMnemonic, mnemonicToSeedSync } from "@scure/bip39";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 
-import { postJSON } from "../../services/api"; // seu helper de API
+import { postJSON } from "../../services/api";
 import { useAuth } from "../../hooks/useAuth";
 
-interface ModalProps {
+interface Props {
   open: boolean;
   onClose: () => void;
 }
 
-export default function ModalCreate({ open, onClose }: ModalProps) {
+export default function ModalCreate({ open, onClose }: Props) {
   const [name, setName] = useState("");
-  const [checked, setChecked] = useState(false);
-  const [error, setError] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const { refresh } = useAuth();
   const navigate = useNavigate();
 
-  if (!open) return null;
+  const wallet = useMemo(() => {
+    if (!open) return null;
 
-  // Gera a wallet (compatível com browser)
-  function generateWallet() {
-    const mnemonic = bip39.generateMnemonic(wordlist, 128);
-    const seed = bip39.mnemonicToSeedSync(mnemonic); // returns Uint8Array
-    const hd = HDKey.fromMasterSeed(seed).derive("m/44'/501'/0'/0'");
-    const seed32 = hd.privateKey as Uint8Array;
-    const keypair = nacl.sign.keyPair.fromSeed(seed32);
-    const publicKey = bs58.encode(keypair.publicKey);
-    const secretKey = bs58.encode(keypair.secretKey);
-    return { mnemonic, publicKey, secretKey };
-  }
+    const mnemonic = generateMnemonic(); 
+    const seed = mnemonicToSeedSync(mnemonic);
+    const seed32 = seed.slice(0, 32);
+    const kp = nacl.sign.keyPair.fromSeed(seed32);
 
-  const wallet = generateWallet();
+    return {
+      mnemonic,
+      publicKey: bs58.encode(kp.publicKey),
+      secretKeyArray: Array.from(kp.secretKey),
+    };
+  }, [open]);
+
+  if (!open || !wallet) return null;
 
   async function handleCreate() {
-    if (!name.trim() || !checked) {
-      setError(true);
+    setError(null);
+
+    if (!name.trim()) {
+      setError("Please provide a wallet name.");
+      return;
+    }
+    if (!confirmed) {
+      setError("Please confirm you saved your seed phrase.");
       return;
     }
 
+    setLoading(true);
+
     try {
-      const base = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
-      // envia mnemonic (ou secret) para seu backend. ajuste o path se necessário
-      await fetch(`${base}/auth/import`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: wallet.mnemonic, name: name.trim() }),
+      const res = await postJSON("/auth/import", {
+        input: wallet.mnemonic,
+        name: name.trim(),
       });
 
-      // pede para o hook atualizar a sessão (refresh)
-      await refresh();
+      if (res?.secretKey) {
+        localStorage.setItem("user_private_key", JSON.stringify(res.secretKey));
+      }
+      if (res?.publicKey) {
+        localStorage.setItem("user_public_key", res.publicKey);
+      }
+
+      try {
+        await refresh();
+      } catch {}
 
       onClose();
       navigate("/wallet");
-    } catch (e: any) {
-      console.error("create wallet error:", e);
-      alert(e?.message ?? "Erro ao criar wallet");
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Failed to create wallet");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <S.Overlay onClick={onClose}>
-      {/* passamos error como boolean | undefined para evitar warn */}
-      <S.ModalContainer onClick={(e) => e.stopPropagation()} error={error ? true : undefined}>
+      <S.ModalContainer onClick={(e) => e.stopPropagation()}>
         <h2>Create Wallet (Solana)</h2>
 
         <S.Input
@@ -80,7 +93,7 @@ export default function ModalCreate({ open, onClose }: ModalProps) {
           value={name}
           onChange={(e) => {
             setName(e.target.value);
-            setError(false);
+            setError(null);
           }}
         />
 
@@ -96,17 +109,22 @@ export default function ModalCreate({ open, onClose }: ModalProps) {
         <S.CheckRow className={error ? "error" : ""}>
           <input
             type="checkbox"
-            checked={checked}
-            onChange={() => setChecked(!checked)}
+            checked={confirmed}
+            onChange={() => setConfirmed((s) => !s)}
           />
           <span>I confirm I saved my seed phrase.</span>
         </S.CheckRow>
 
-        {error && <S.ErrorMsg>Please fill all required fields.</S.ErrorMsg>}
+        {error && <S.ErrorMsg>{error}</S.ErrorMsg>}
 
         <S.Actions>
-          <S.SecondaryButton onClick={onClose}>Cancel</S.SecondaryButton>
-          <PrimaryButton onClick={handleCreate}>Create →</PrimaryButton>
+          <S.SecondaryButton onClick={onClose} disabled={loading}>
+            Cancel
+          </S.SecondaryButton>
+
+          <PrimaryButton onClick={handleCreate} disabled={loading}>
+            {loading ? "Creating..." : "Create →"}
+          </PrimaryButton>
         </S.Actions>
       </S.ModalContainer>
     </S.Overlay>

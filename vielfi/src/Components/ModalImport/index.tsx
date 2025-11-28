@@ -1,37 +1,47 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
-import { postJSON } from "../../services/api";
 import { importAnyWallet } from "../../utils/walletImport";
-import { useAuth } from "../../hooks/useAuth";
+import { postJSON } from "../../services/api";
 
-export default function ModalImport({ open, onClose }) {
+interface Props {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function ModalImport({ open, onClose }: Props) {
   const [input, setInput] = useState("");
-  const [error, setError] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-  const { refresh } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (!open) return null;
 
   async function handleImport() {
-
+    setError(null);
+    setLoading(true);
 
     try {
-      importAnyWallet(input);
+      // valida offline
+      const wallet = importAnyWallet(input);
 
-      await postJSON("/auth/import", { input });
+      // importa no backend
+      const res = await postJSON("/auth/import", { input });
 
-      await refresh();
+      // salva localmente (somente enquanto desenvolve)
+      if (res?.secretKey) {
+        localStorage.setItem("user_private_key", JSON.stringify(res.secretKey));
+      }
+      if (res?.publicKey) {
+        localStorage.setItem("user_public_key", res.publicKey);
+      }
 
+      onClose();
       window.location.href = "/wallet";
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Import failed");
+      setError(err?.message || "Import failed");
+    } finally {
+      setLoading(false);
     }
-  }
-
-  function copy() {
-    navigator.clipboard.writeText(input);
   }
 
   return (
@@ -46,13 +56,16 @@ export default function ModalImport({ open, onClose }) {
           onChange={(e) => setInput(e.target.value)}
         />
 
-
-
         {error && <S.ErrorMsg>{error}</S.ErrorMsg>}
 
         <S.Actions>
-          <S.SecondaryButton onClick={onClose}>Cancel</S.SecondaryButton>
-          <PrimaryButton onClick={handleImport}>Import →</PrimaryButton>
+          <S.SecondaryButton onClick={onClose} disabled={loading}>
+            Cancel
+          </S.SecondaryButton>
+
+          <PrimaryButton onClick={handleImport} disabled={loading}>
+            {loading ? "Importing..." : "Import →"}
+          </PrimaryButton>
         </S.Actions>
       </S.ModalContainer>
     </S.Overlay>

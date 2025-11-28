@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/Pages/Wallet/index.tsx
+import React, { useEffect, useRef, useState } from "react";
 import * as S from "./styles";
 import {
   Shield,
@@ -7,44 +8,123 @@ import {
   TrendingUp,
   Download,
   ArrowRightLeft,
-  Wallet
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import { getJSON, postJSON } from "../../services/api";
+
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const POLL_INTERVAL = 30_000; // 30 segundos
+const MAX_RETRIES = 4;
+const INITIAL_RETRY_DELAY = 500;
+
+const inFlight = new Map<string, Promise<any>>();
+
+async function rawFetchWithRetry(
+  path: string,
+  options = {},
+  retries = MAX_RETRIES,
+  retryDelay = INITIAL_RETRY_DELAY
+) {
+  const res = await fetch(`${API}${path}`, {
+    method: options.method ?? "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers ?? {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  if (res.status === 429 && retries > 0) {
+    const jitter = Math.floor(Math.random() * 200);
+    await new Promise((r) => setTimeout(r, retryDelay + jitter));
+    return rawFetchWithRetry(path, options, retries - 1, retryDelay * 2);
+  }
+
+  const text = await res.text().catch(() => "");
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {}
+
+  if (!res.ok) {
+    throw new Error(json?.error ?? json?.message ?? `HTTP ${res.status}`);
+  }
+
+  return json;
+}
+
+function requestSingle(key, path, options) {
+  if (inFlight.has(key)) return inFlight.get(key);
+  const p = rawFetchWithRetry(path, options)
+    .then((r) => {
+      inFlight.delete(key);
+      return r;
+    })
+    .catch((err) => {
+      inFlight.delete(key);
+      throw err;
+    });
+  inFlight.set(key, p);
+  return p;
+}
+
+function getJSON(path) {
+  return requestSingle(`GET:${path}`, path, { method: "GET" });
+}
+
+function postJSON(path, body) {
+  return requestSingle(`POST:${path}:${JSON.stringify(body)}`, path, {
+    method: "POST",
+    body,
+  });
+}
 
 export default function WalletPage() {
-  const { walletAddress, loading, refresh } = useAuth();
+  const auth = useAuth();
 
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [balanceSOL, setBalanceSOL] = useState<number | null>(null);
-  const [tokens, setTokens] = useState<any[]>([]);
+  const [tokens, setTokens] = useState([]);
   const [showTokens, setShowTokens] = useState(false);
 
-  // ------------ CARREGAR SALDO (MESMA LÓGICA DO DEPOSIT) ----------------
-  useEffect(() => {
-    async function load() {
-      try {
-        const session = await getJSON("/session/me");
+  const mountedRef = useRef(true);
+  const pollingRef = useRef(null);
+  const isLoadingRef = useRef(false);
 
-        if (!session.user?.walletPubkey) {
-          console.error("No pubkey in session");
-          return;
-        }
+  async function loadOnce() {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
 
-        const res = await postJSON("/user/balance", {
-          userPubkey: session.user.walletPubkey,
-        });
+    try {
+      const session = await getJSON("/session/me");
+      const pub = session?.user?.walletPubkey;
+      if (!pub) return;
 
-        setBalanceSOL(res.solBalance ?? 0);
-        setTokens(res.tokens ?? []);
-      } catch (err) {
-        console.error("Wallet error:", err);
-      }
+      const r = await postJSON("/user/balance", { userPubkey: pub });
+
+      if (!mountedRef.current) return;
+
+      setBalanceSOL(typeof r.solBalance === "number" ? r.solBalance : 0);
+      setTokens(Array.isArray(r.tokens) ? r.tokens : []);
+    } catch (err) {
+      console.error("Wallet load error:", err);
+    } finally {
+      isLoadingRef.current = false;
     }
+  }
 
-    load();
-    const int = setInterval(load, 10_000);
-    return () => clearInterval(int);
+  useEffect(() => {
+    mountedRef.current = true;
+
+    loadOnce();
+
+    pollingRef.current = setInterval(loadOnce, POLL_INTERVAL);
+
+    return () => {
+      mountedRef.current = false;
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
   return (
@@ -52,18 +132,21 @@ export default function WalletPage() {
       <S.Content>
         <S.Header>
           <div className="brand">
-            <img src="/logo.png" alt="logo" />
+            <img
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-ZVjMTys6STYDB0t4fhhg5UozJDxBAq.png"
+              alt="logo"
+            />
             <h1>Veilfi</h1>
           </div>
         </S.Header>
 
-        {/* ---------------------- BALANCE CARD ---------------------- */}
         <S.BalanceCard>
           <S.BalanceHeader>
             <div className="left">
               <div className="iconBox">
                 <Shield className="shield" />
               </div>
+
               <div>
                 <div className="title">Shielded Balance</div>
                 <div className="subtitle">Private funds</div>
@@ -71,28 +154,40 @@ export default function WalletPage() {
             </div>
 
             <div className="right">
-              <button onClick={() => setIsBalanceVisible(!isBalanceVisible)}>
+              <button onClick={() => setIsBalanceVisible((s) => !s)}>
                 {isBalanceVisible ? <Eye className="eye" /> : <EyeOff className="eye" />}
               </button>
             </div>
           </S.BalanceHeader>
 
-          {/* VALOR DO SALDO */}
           <S.BalanceValue>
             {isBalanceVisible
               ? balanceSOL !== null
                 ? balanceSOL.toFixed(4)
-                : loading
-                ? "…"
-                : "0.0000"
+                : "…"
               : "****"}
             <span className="currency">SOL</span>
           </S.BalanceValue>
 
-          {/* Botão para mostrar tokens */}
+          <button
+            onClick={() => loadOnce()}
+            style={{
+              marginTop: 14,
+              background: "#9d4edd",
+              color: "white",
+              border: "none",
+              padding: "8px 12px",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontSize: "0.9rem",
+            }}
+          >
+            Atualizar agora
+          </button>
+
           <div style={{ marginTop: 10, textAlign: "center" }}>
             <button
-              onClick={() => setShowTokens(!showTokens)}
+              onClick={() => setShowTokens((s) => !s)}
               style={{
                 background: "transparent",
                 border: "none",
@@ -110,7 +205,6 @@ export default function WalletPage() {
             </button>
           </div>
 
-          {/* LISTA DE TOKENS */}
           {showTokens && (
             <div style={{ marginTop: 15, padding: "10px 0" }}>
               {tokens.length === 0 ? (
@@ -125,7 +219,7 @@ export default function WalletPage() {
                       display: "flex",
                       justifyContent: "space-between",
                       padding: "8px 14px",
-                      background: "rgba(255, 255, 255, 0.05)",
+                      background: "rgba(255,255,255,0.05)",
                       borderRadius: 8,
                       marginBottom: 8,
                     }}
@@ -133,9 +227,7 @@ export default function WalletPage() {
                     <div>
                       <strong>{t.mint.slice(0, 6)}...</strong>
                     </div>
-                    <div style={{ color: "#9d4edd" }}>
-                      {t.uiAmount ?? 0}
-                    </div>
+                    <div style={{ color: "#9d4edd" }}>{t.uiAmount ?? 0}</div>
                   </div>
                 ))
               )}
@@ -143,9 +235,8 @@ export default function WalletPage() {
           )}
         </S.BalanceCard>
 
-        {/* ---------------------- ACTION BUTTONS ---------------------- */}
         <S.ActionGrid>
-          <S.ActionButton to="/wallet">
+          <S.ActionButton to="/send">
             <S.ActionIcon className="purple">
               <TrendingUp />
             </S.ActionIcon>
@@ -173,4 +264,3 @@ export default function WalletPage() {
     </S.PageContainer>
   );
 }
-vei

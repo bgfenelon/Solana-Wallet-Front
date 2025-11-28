@@ -1,104 +1,54 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { PublicKey } from "@solana/web3.js";
+import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
+import { Keypair } from "@solana/web3.js";
 
-interface TokenData {
-  symbol: string;
-  mint: string | null;
-  decimals: number;
-  balance: number;
-}
+/**
+ * Importa uma wallet via mnemonic ou private key.
+ */
+export function importAnyWallet(input: string) {
+  const clean = input.trim();
 
-interface WalletState {
-  walletName: string | null;
-  privateKey: string | null;   // base58
-  address: string | null;      // base58
-  seedPhrase: string | null;
+  // ---------------------------
+  // 1) IMPORT VIA SEED PHRASE
+  // ---------------------------
+  const words = clean.split(/\s+/);
 
-  balance: number;             // SOL balance
-  tokens: TokenData[];         // SPL tokens (USDC, VEIL, etc.)
-  depositAddress: string | null;
-
-  setWallet: (
-    name: string,
-    privateKey: string,
-    address: string,
-    seedPhrase: string
-  ) => void;
-
-  setBalance: (amount: number) => void;
-  setTokens: (tokens: TokenData[]) => void;
-  setDepositAddress: (addr: string | null) => void;
-
-  resetWallet: () => void;
-}
-
-export const useWalletStore = create<WalletState>()(
-  persist(
-    (set) => ({
-      walletName: null,
-      privateKey: null,
-      address: null,
-      seedPhrase: null,
-
-      balance: 0,
-      tokens: [],
-      depositAddress: null,
-
-      // ------------------------------------------------------
-      // CREATE WALLET (NOW ONLY VALID SOLANA WALLETS)
-      // ------------------------------------------------------
-      setWallet: (walletName, privateKey, address, seedPhrase) => {
-        try {
-          new PublicKey(address); // Validate Base58 Solana address
-        } catch (err) {
-          console.error("❌ Invalid Solana address:", address);
-          return;
-        }
-
-        set({
-          walletName,
-          privateKey,
-          address,
-          seedPhrase,
-          balance: 0,
-          tokens: [],
-          depositAddress: address, // deposit always uses the public key
-        });
-      },
-
-      // ------------------------------------------------------
-      // SET SOL BALANCE
-      // ------------------------------------------------------
-      setBalance: (amount) => set({ balance: amount }),
-
-      // ------------------------------------------------------
-      // SET SPL TOKENS (USDC, VEIL, ...)
-      // ------------------------------------------------------
-      setTokens: (tokens) => set({ tokens }),
-
-      // ------------------------------------------------------
-      // SET DEPOSIT ADDRESS
-      // ------------------------------------------------------
-      setDepositAddress: (addr) => set({ depositAddress: addr }),
-
-      // ------------------------------------------------------
-      // RESET WALLET COMPLETELY
-      // ------------------------------------------------------
-      resetWallet: () =>
-        set({
-          walletName: null,
-          privateKey: null,
-          address: null,
-          seedPhrase: null,
-          balance: 0,
-          tokens: [],
-          depositAddress: null,
-        }),
-    }),
-
-    {
-      name: "veilfi-wallet", // localStorage key
+  // Se tiver 12 ou mais palavras, tentamos validar como seed phrase
+  if (words.length >= 12) {
+    if (!validateMnemonic(clean)) {
+      throw new Error("Invalid seed phrase");
     }
-  )
-);
+
+    const seed = mnemonicToSeedSync(clean); // retorna 64 bytes
+    const seed32 = seed.slice(0, 32); // Solana usa somente 32 bytes
+
+    const keypair = Keypair.fromSeed(seed32);
+
+    return {
+      type: "mnemonic",
+      publicKey: keypair.publicKey.toBase58(),
+      privateKey: JSON.stringify(Array.from(keypair.secretKey)),
+    };
+  }
+
+  // ---------------------------
+  // 2) IMPORT VIA PRIVATE KEY JSON (ARRAY DE 64 BYTES)
+  // ---------------------------
+  try {
+    const arr = JSON.parse(clean);
+
+    if (!Array.isArray(arr) || arr.length !== 64) {
+      throw new Error("Invalid private key array");
+    }
+
+    const uint = Uint8Array.from(arr);
+    const keypair = Keypair.fromSecretKey(uint);
+
+    return {
+      type: "private_key",
+      publicKey: keypair.publicKey.toBase58(),
+      privateKey: JSON.stringify(arr),
+    };
+  } catch (e) {
+    throw new Error("Invalid input format (seed phrase or private key expected)");
+  }
+}

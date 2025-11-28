@@ -1,26 +1,32 @@
-// useAuth.tsx
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { getJSON } from "../services/api";
 
 export function useAuth() {
-  const [user, setUser] = useState(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function fetchSession() {
+  async function refresh() {
     try {
-      const res = await getJSON("/session/me");
-      setUser(res.user);
-    } catch (err) {
-      console.warn("Nenhuma sessão ativa");
-      setUser(null);
-    } finally {
-      setLoading(false);
+      const data = await getJSON("/session/me");
+
+      if (data?.ok && data?.user?.walletPubkey) {
+        setWalletAddress(data.user.walletPubkey);
+      } else {
+        setWalletAddress(null);
+      }
+
+    } catch {
+      setWalletAddress(null);
     }
+
+    setLoading(false);
   }
 
   useEffect(() => {
-    fetchSession();
+    refresh();
+    const i = setInterval(refresh, 8000);
+    return () => clearInterval(i);
   }, []);
 
-  return { user, loading, refresh: fetchSession };
+  return { walletAddress, loading, refresh };
 }

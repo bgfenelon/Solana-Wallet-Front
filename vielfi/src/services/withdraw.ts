@@ -13,7 +13,7 @@ export async function withdrawSol(to: string, amount: number) {
     return data;
 
   } catch (error) {
-    console.error("Erro no withdrawSol:", error);
-    return { success: false, error: "Erro de comunicação com backend." };
+    console.error("Error withdrawSol:", error);
+    return { success: false, error: "Error comunication." };
   }
 }

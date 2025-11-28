@@ -1,86 +1,78 @@
+// src/Components/ModalImport/styles.ts
 import styled from "styled-components";
 
 export const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(6px);
-  display:flex; align-items:center; justify-content:center;
-  z-index:999;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99;
 `;
 
 export const ModalContainer = styled.div`
   background: var(--secondary);
-  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   padding: 28px;
-  border-radius: 14px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
 
   h2 {
-    margin-bottom: 16px;
-  }
-
-  label {
-    font-size: 14px;
-    opacity: 0.9;
+    margin-bottom: 20px;
+    text-align: center;
   }
 `;
 
+/* 🔥 CORRIGIDO: era Input, agora é TextArea */
 export const TextArea = styled.textarea`
   width: 100%;
-  min-height: 120px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: #111;
-  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
+  min-height: 110px;
+  resize: none;
+
+  background: #101010;
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
   color: var(--foreground);
-  margin: 8px 0 6px;
-`;
 
-export const CopyRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
-`;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin-bottom: 16px;
 
-export const CopyButton = styled.button`
-  padding: 6px 12px;
-  background: var(--primary);
-  border: none;
-  color: white;
-  font-size: 13px;
-  border-radius: 6px;
-  cursor: pointer;
-  &:hover { opacity: 0.85; }
-`;
-
-export const ConfirmRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-
-  input {
-    transform: scale(1.2);
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
   }
 `;
 
-export const ErrorMsg = styled.div`
-  color: #ff3b3b;
-  margin-bottom: 10px;
+export const ErrorMsg = styled.p`
+  color: #ff5b5b;
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+  text-align: center;
 `;
 
 export const Actions = styled.div`
-  display:flex; gap:12px; justify-content:flex-end;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 10px;
 `;
 
 export const SecondaryButton = styled.button`
-  padding: 12px 20px;
-  background: transparent;
-  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
+  flex: 1;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  border-radius: 10px;
+  background: #181818;
   color: var(--foreground);
-  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  &:hover { background: color-mix(in oklab, var(--primary) 10%, transparent); }
+
+  &:hover {
+    background: #222;
+  }
 `;
