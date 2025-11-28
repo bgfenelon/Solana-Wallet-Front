@@ -3,7 +3,7 @@
 
 export async function withdrawSol(to: string, amount: number) {
   try {
-    const res = await fetch("http://localhost:3001/withdraw/sol", {
+    const res = await fetch("https://node-veilfi-jtae.onrender.com/withdraw/sol", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ to, amount }),

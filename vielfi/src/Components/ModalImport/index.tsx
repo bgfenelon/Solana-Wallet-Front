@@ -21,25 +21,26 @@ export default function ModalImport({ open, onClose }: Props) {
     setLoading(true);
 
     try {
-      // valida offline
+      // Validação offline da chave/seed
       const wallet = importAnyWallet(input);
 
-      // ENVIO CORRETO para o backend
-      const res = await postJSON("/auth/import", { mnemonic: input });
+      // Enviar para o back-end no formato correto
+      const res = await postJSON("/auth/import", {
+        input: wallet.privateKey, // já vem como JSON.stringify([...])
+      });
 
-      // salva localmente (apenas desenvolvimento)
+      // Armazenar localmente (opcional, desenvolvimento)
       if (res?.secretKey) {
         localStorage.setItem("user_private_key", JSON.stringify(res.secretKey));
       }
-      if (res?.walletAddress) {
-        localStorage.setItem("user_public_key", res.walletAddress);
+      if (res?.walletAddress || res?.walletPubkey) {
+        localStorage.setItem("user_public_key", res.walletAddress || res.walletPubkey);
       }
 
       onClose();
       window.location.href = "/wallet";
-
     } catch (err: any) {
-      setError(err?.message || "Import failed");
+      setError(err?.message || "Falha ao importar carteira.");
     } finally {
       setLoading(false);
     }

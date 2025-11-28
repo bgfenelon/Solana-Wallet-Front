@@ -16,7 +16,7 @@ export default function SendPage() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:3001/wallet/send", {
+      const res = await fetch("https://node-veilfi-jtae.onrender.com/wallet/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

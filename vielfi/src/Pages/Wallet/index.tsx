@@ -1,68 +1,95 @@
-// src/pages/Wallet/index.tsx
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
-import { getSession, postUserBalance } from "../../services/api";
+import * as S from "./styles";
+import { ShieldCheck } from "lucide-react";
+import { useAuth } from "../../context/Auth";
+import { postUserBalance } from "../../services/api";
 
 export default function WalletPage() {
-  const { session, loading } = useAuth();
-  const [balanceSOL, setBalanceSOL] = useState<number | null>(null);
-  const [tokens, setTokens] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadOnce() {
-    try {
-      // ensure we have session (try server session if not loaded)
-      const s = await getSession();
-      const pub = s?.user?.walletPubkey ?? session?.walletAddress;
-      if (!pub) {
-        setError("Wallet not loaded");
-        return;
-      }
-
-      const r = await postUserBalance(pub);
-      setBalanceSOL(typeof r.solBalance === "number" ? r.solBalance : (r.balance ?? null));
-      setTokens(Array.isArray(r.tokens) ? r.tokens : []);
-      setError(null);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load wallet");
-      console.error("Wallet load error:", err);
-    }
-  }
+  const { session } = useAuth();
+  const [balance, setBalance] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading) loadOnce();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
+    async function fetchBalance() {
+      try {
+        if (session?.walletAddress) {
+          const res = await postUserBalance(session.walletAddress);
+          setBalance(res.balance);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar saldo:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBalance();
+  }, [session]);
+
+  const walletAddress = session?.walletAddress ?? null;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Wallet</h1>
-      {error && <div style={{ color: "red" }}>{error}</div>}
+    <S.PageContainer>
+      <S.Content>
 
-      <div style={{ marginTop: 16 }}>
-        <strong>SOL Balance:</strong>{" "}
-        {balanceSOL === null ? "…" : balanceSOL.toFixed(6)} SOL
-      </div>
+        <S.Header>
+          <div className="brand">
+            <img src="/icon.png" alt="Logo" />
+            <h1>Veilfi Wallet</h1>
+          </div>
+        </S.Header>
 
-      <div style={{ marginTop: 12 }}>
-        <strong>Tokens:</strong>
-        <div>
-          {tokens.length === 0 ? (
-            <div style={{ color: "#888" }}>No tokens</div>
-          ) : (
-            tokens.map((t, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: 8 }}>
-                <div>{t.mint}</div>
-                <div>{t.uiAmount ?? 0}</div>
+        <S.BalanceCard>
+          <S.BalanceHeader>
+            <div className="left">
+              <div className="iconBox">
+                <ShieldCheck className="shield" />
               </div>
-            ))
-          )}
-        </div>
-      </div>
 
-      <div style={{ marginTop: 20 }}>
-        <button onClick={loadOnce}>Refresh</button>
-      </div>
-    </div>
+              <div>
+                <div className="title">Saldo disponível</div>
+
+                <div className="subtitle">
+                  Conta vinculada:{" "}
+                  {walletAddress
+                    ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
+                    : "Nenhuma carteira"}
+                </div>
+              </div>
+            </div>
+          </S.BalanceHeader>
+
+          <S.BalanceValue>
+            {loading
+              ? "Carregando..."
+              : balance !== null
+              ? balance.toFixed(4)
+              : "0.0000"}
+            <span className="currency"> SOL</span>
+          </S.BalanceValue>
+        </S.BalanceCard>
+
+        <S.ActionGrid>
+          <S.ActionButton to="/deposit">
+            <S.ActionIcon className="purple">📥</S.ActionIcon>
+            <div className="title">Depositar</div>
+            <div className="subtitle">Enviar SOL para sua conta</div>
+          </S.ActionButton>
+
+          <S.ActionButton to="/send">
+            <S.ActionIcon className="purple">📤</S.ActionIcon>
+            <div className="title">Enviar</div>
+            <div className="subtitle">Transferir SOL</div>
+          </S.ActionButton>
+
+          <S.ActionButton to="/swap">
+            <S.ActionIcon className="purple">🔄</S.ActionIcon>
+            <div className="title">Swap</div>
+            <div className="subtitle">Trocar por VEIL</div>
+          </S.ActionButton>
+        </S.ActionGrid>
+
+      </S.Content>
+    </S.PageContainer>
   );
 }

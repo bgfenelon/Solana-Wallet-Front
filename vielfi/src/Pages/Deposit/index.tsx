@@ -1,8 +1,7 @@
-// src/Pages/Deposit/index.tsx
 import React, { useEffect, useRef, useState } from "react";
 import * as S from "./styles";
 import QRCode from "react-qr-code";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../context/Auth"; // usa o Auth real
 
 /**
  * Deposit Page completo
@@ -10,12 +9,10 @@ import { useAuth } from "../../hooks/useAuth";
  * - botão "Atualizar agora"
  * - retry/backoff para 429
  * - evita chamadas concorrentes
- *
- * Não depende de src/services/api; usa client interno para garantir comportamento robusto.
  */
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
-const POLL_INTERVAL = 30_000; // 30 segundos
+const API = import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
+const POLL_INTERVAL = 30_000;
 const MAX_RETRIES = 4;
 const INITIAL_RETRY_DELAY = 500;
 
@@ -44,12 +41,10 @@ async function rawFetchWithRetry(
   }
 
   const text = await res.text().catch(() => "");
-  let json: any = null;
+  let json = null;
   try {
     json = text ? JSON.parse(text) : null;
-  } catch {
-    // ignore parse errors (non-JSON responses)
-  }
+  } catch {}
 
   if (!res.ok) {
     const errMsg = json?.error ?? json?.message ?? `HTTP ${res.status}`;
@@ -77,6 +72,7 @@ function requestSingle(key: string, path: string, options?: any) {
 function getJSON(path: string) {
   return requestSingle(`GET:${path}`, path, { method: "GET" });
 }
+
 function postJSON(path: string, body: any) {
   return requestSingle(`POST:${path}:${JSON.stringify(body)}`, path, {
     method: "POST",
@@ -85,33 +81,35 @@ function postJSON(path: string, body: any) {
 }
 
 export default function DepositPage(): JSX.Element {
-  const { walletAddress } = useAuth();
+  const { session, loading: authLoading } = useAuth();
+
+  // 🚨 Fallback seguro: evita crash
+  const walletAddress = session?.walletAddress ?? null;
 
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
   const mountedRef = useRef(true);
   const isLoadingRef = useRef(false);
   const pollingRef = useRef<number | null>(null);
 
-  // Carrega saldo via /session/me -> /user/balance
+  // carrega saldo
   async function loadOnce() {
+    if (!walletAddress) return;
     if (isLoadingRef.current) return;
+
     isLoadingRef.current = true;
     setLoading(true);
-    try {
-      const session = await getJSON("/session/me");
-      const pub = session?.user?.walletPubkey;
-      if (!pub) {
-        // sem sessão ativa; não altera balance
-        return;
-      }
 
-      const res = await postJSON("/user/balance", { userPubkey: pub });
+    try {
+      const res = await postJSON("/user/balance", {
+        userPubkey: walletAddress,
+      });
+
       if (!mountedRef.current) return;
 
-      setBalance(typeof res?.solBalance === "number" ? res.solBalance : 0);
+      setBalance(typeof res?.balance === "number" ? res.balance : 0);
     } catch (err: any) {
-      // Não limpar o balance em erros para evitar flicker quando houver 429/transientes
       console.error("Error loading deposit balance:", err?.message ?? err);
     } finally {
       isLoadingRef.current = false;
@@ -122,12 +120,10 @@ export default function DepositPage(): JSX.Element {
   useEffect(() => {
     mountedRef.current = true;
 
-    // inicial
-    loadOnce();
+    if (walletAddress) loadOnce();
 
-    // polling único
     pollingRef.current = window.setInterval(() => {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || !walletAddress) return;
       loadOnce();
     }, POLL_INTERVAL);
 
@@ -138,8 +134,22 @@ export default function DepositPage(): JSX.Element {
         pollingRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [walletAddress]);
+
+  if (authLoading) {
+    return <S.PageContainer><S.Box>Carregando carteira...</S.Box></S.PageContainer>;
+  }
+
+  if (!walletAddress) {
+    return (
+      <S.PageContainer>
+        <S.Box>
+          <h2>Nenhuma carteira conectada</h2>
+          <p>Importe sua carteira para depositar SOL.</p>
+        </S.Box>
+      </S.PageContainer>
+    );
+  }
 
   return (
     <S.PageContainer>
@@ -148,40 +158,41 @@ export default function DepositPage(): JSX.Element {
         <p>Send SOL to your personal wallet address:</p>
 
         <S.QrWrapper>
-          <QRCode value={walletAddress || "0"} size={180} />
+          <QRCode value={walletAddress} size={180} />
         </S.QrWrapper>
 
-        <S.AddrBox>{walletAddress || "—"}</S.AddrBox>
+        <S.AddrBox>{walletAddress}</S.AddrBox>
 
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            justifyContent: "center",
+            marginTop: 12,
+          }}
+        >
           <button
             className="copy"
-            onClick={() => {
-              if (walletAddress) navigator.clipboard.writeText(walletAddress);
-            }}
+            onClick={() => navigator.clipboard.writeText(walletAddress)}
           >
             Copy Address
           </button>
 
-
-        </div>
-
-        <p style={{ marginTop: 10, opacity: 0.7 }}>
-          The system will automatically detect new deposits (polls every 30s). Use "Atualizar agora" to force a check.
-        </p>
-
-        <h3 style={{ marginTop: 20 }}>
-          Balance: <strong>{balance !== null ? balance.toFixed(4) + " SOL" : "—"}</strong>
-        </h3>
-        {/* TODO */}
-                  <button
+          <button
             className="refresh"
-            onClick={() => loadOnce()}
+            onClick={loadOnce}
             disabled={loading}
-            title="Refresh balance now"
           >
             {loading ? "Updating..." : "Atualizar agora"}
           </button>
+        </div>
+
+        <h3 style={{ marginTop: 20 }}>
+          Balance:{" "}
+          <strong>
+            {balance !== null ? balance.toFixed(4) + " SOL" : "—"}
+          </strong>
+        </h3>
       </S.Box>
     </S.PageContainer>
   );

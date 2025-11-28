@@ -1,4 +1,3 @@
-// src/Pages/Wallet/styles.ts
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 
@@ -7,7 +6,7 @@ export const PageContainer = styled.div`
   width: 100%;
   background: var(--background);
   color: var(--foreground);
-  padding: 28px;
+  padding: 34px 20px;
   display: flex;
   justify-content: center;
 `;
@@ -25,16 +24,17 @@ export const Header = styled.div`
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 
     img {
-      width: 34px;
-      height: 34px;
+      width: 40px;
+      height: 40px;
     }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.7rem;
       font-weight: 700;
+      color: #e9d8ff;
     }
   }
 `;
@@ -42,9 +42,10 @@ export const Header = styled.div`
 export const BalanceCard = styled.div`
   background: rgba(13, 5, 22, 0.65);
   border: 1px solid rgba(157, 78, 221, 0.35);
-  padding: 26px;
+  padding: 28px;
   border-radius: 18px;
   margin-bottom: 36px;
+  box-shadow: 0 0 14px rgba(157, 78, 221, 0.15);
 `;
 
 export const BalanceHeader = styled.div`
@@ -53,59 +54,50 @@ export const BalanceHeader = styled.div`
 
   .left {
     display: flex;
-    gap: 12px;
+    gap: 14px;
     align-items: center;
   }
 
   .iconBox {
-    background: rgba(157, 78, 221, 0.2);
-    padding: 10px;
-    border-radius: 12px;
+    background: rgba(157, 78, 221, 0.25);
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(157, 78, 221, 0.4);
 
     .shield {
-      width: 22px;
-      height: 22px;
-      color: #caa8ff;
+      width: 24px;
+      height: 24px;
+      color: #dcb9ff;
     }
   }
 
   .title {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     font-weight: 600;
+    color: #e8d4ff;
   }
 
   .subtitle {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: #bdaed8;
-  }
-
-  .right button {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-
-    .eye {
-      width: 22px;
-      height: 22px;
-      color: #caa8ff;
-    }
   }
 `;
 
 export const BalanceValue = styled.div`
-  margin-top: 16px;
-  font-size: 2.4rem;
+  margin-top: 18px;
+  font-size: 2.6rem;
   font-weight: 700;
+  color: #ffffff;
 
   .currency {
     margin-left: 8px;
     font-size: 1rem;
-    opacity: 0.8;
+    opacity: 0.75;
   }
 `;
 
 export const ActionGrid = styled.div`
-  margin-top: 24px;
+  margin-top: 30px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
@@ -114,8 +106,8 @@ export const ActionGrid = styled.div`
 export const ActionButton = styled(Link)`
   text-decoration: none;
   padding: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(157, 78, 221, 0.25);
   border-radius: 14px;
   text-align: center;
   transition: 0.15s ease;
@@ -127,15 +119,17 @@ export const ActionButton = styled(Link)`
   }
 
   .title {
-    margin-top: 10px;
-    font-size: 1.05rem;
+    margin-top: 12px;
+    font-size: 1.1rem;
     font-weight: 600;
+    color: #f7e8ff;
   }
 
   .subtitle {
     font-size: 0.85rem;
     opacity: 0.75;
     margin-top: 4px;
+    color: #d8c4ef;
   }
 `;
 
@@ -148,14 +142,16 @@ export const ActionIcon = styled.div`
   justify-content: center;
   align-items: center;
 
+  font-size: 26px; /* For emoji icons */
+
   &.purple {
     background: rgba(157, 78, 221, 0.25);
     border: 1px solid rgba(157, 78, 221, 0.5);
 
     svg {
       color: #dcb9ff;
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
     }
   }
 `;

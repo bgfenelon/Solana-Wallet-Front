@@ -22,7 +22,6 @@ export default function ModalCreate({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { refresh } = useAuth();
   const navigate = useNavigate();
 
   const wallet = useMemo(() => {

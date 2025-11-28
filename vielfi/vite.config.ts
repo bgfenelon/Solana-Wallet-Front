@@ -1,17 +1,27 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-
-// 🔥 Removido qualquer polyfill, pq quebra tudo no Vite moderno
+import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react()
+  ],
   resolve: {
     alias: {
-      // Se precisar do buffer: 
       buffer: "buffer/",
     },
   },
-  define: {
-    global: {},
-  }
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: "globalThis",
+      },
+      plugins: [
+        NodeGlobalsPolyfillPlugin({
+          process: true,
+          buffer: true,
+        }),
+      ],
+    },
+  },
 });

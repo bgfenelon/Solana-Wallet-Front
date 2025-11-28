@@ -1,15 +1,17 @@
-// src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/Auth";
+import { ToastProvider } from "./Components/Toast";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
