@@ -81,7 +81,7 @@ export function getSession() {
     BALANCE  (ROTA CORRETA DA SUA API)
 =========================================================== */
 export function postUserBalance(userPubkey: string) {
-  return postJSON("/balance", { userPubkey });
+  return postJSON("/user/balance", { userPubkey });
 }
 
 /* ===========================================================

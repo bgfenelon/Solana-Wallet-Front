@@ -9,22 +9,30 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchBalance() {
-      try {
-        if (session?.walletAddress) {
-          const res = await postUserBalance(session.walletAddress);
-          setBalance(res.balance);
-        }
-      } catch (err) {
-        console.error("Erro ao buscar saldo:", err);
-      } finally {
+useEffect(() => {
+  async function fetchBalance() {
+    try {
+      // Garantir que existe sessão e endereço válido
+      if (!session?.walletAddress || session.walletAddress.length < 20) {
+        console.warn("Endereço de carteira inválido:", session?.walletAddress);
         setLoading(false);
+        return;
       }
-    }
 
-    fetchBalance();
-  }, [session]);
+      const userPubkey = session.walletAddress.trim();
+
+      const res = await postUserBalance(userPubkey);
+      setBalance(res.balance);
+    } catch (err) {
+      console.error("Erro ao buscar saldo:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchBalance();
+}, [session]);
+
 
   const walletAddress = session?.walletAddress ?? null;
 

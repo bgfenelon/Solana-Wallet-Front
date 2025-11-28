@@ -4,7 +4,7 @@ const router = express.Router();
 const { getSolanaWalletInfo } = require("../services/solana");
 
 // GET /wallet/balance?address=XXXX
-router.get("/balance", async (req, res) => {
+router.get("/user/balance", async (req, res) => {
   try {
     const { address } = req.query;
 

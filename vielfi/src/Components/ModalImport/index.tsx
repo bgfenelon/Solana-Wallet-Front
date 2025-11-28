@@ -3,6 +3,7 @@ import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
 import { importAnyWallet } from "../../utils/walletImport";
 import { postJSON } from "../../services/api";
+import { useAuth } from "../../context/Auth";
 
 interface Props {
   open: boolean;
@@ -14,6 +15,8 @@ export default function ModalImport({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const { saveWallet } = useAuth(); // 🔥 usado para salvar a carteira REAL
+
   if (!open) return null;
 
   async function handleImport() {
@@ -21,25 +24,33 @@ export default function ModalImport({ open, onClose }: Props) {
     setLoading(true);
 
     try {
-      // Validação offline da chave/seed
+      // 1️⃣ Validar chave/seed offline e obter keypair real
       const wallet = importAnyWallet(input);
 
-      // Enviar para o back-end no formato correto
-      const res = await postJSON("/auth/import", {
-        input: wallet.privateKey, // já vem como JSON.stringify([...])
+      const realPubkey = wallet.publicKey;
+      const realSecretKey = wallet.privateKey; // array de 64 números
+
+      if (!realPubkey || realPubkey.length < 30) {
+        throw new Error("Chave pública inválida gerada.");
+      }
+
+      // 2️⃣ Chamar opcionalmente o backend (verificação, registro, etc.)
+      await postJSON("/auth/import", {
+        input: realSecretKey,
       });
 
-      // Armazenar localmente (opcional, desenvolvimento)
-      if (res?.secretKey) {
-        localStorage.setItem("user_private_key", JSON.stringify(res.secretKey));
-      }
-      if (res?.walletAddress || res?.walletPubkey) {
-        localStorage.setItem("user_public_key", res.walletAddress || res.walletPubkey);
-      }
+      // 3️⃣ SALVAR NO AUTH CONTEXT (forma correta)
+      saveWallet({
+        walletAddress: realPubkey,
+        secretKey: realSecretKey,
+      });
 
+      // 4️⃣ Fechar modal e redirecionar
       onClose();
       window.location.href = "/wallet";
+
     } catch (err: any) {
+      console.error(err);
       setError(err?.message || "Falha ao importar carteira.");
     } finally {
       setLoading(false);
