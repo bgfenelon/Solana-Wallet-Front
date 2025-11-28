@@ -1,10 +1,12 @@
-const API_BASE =
-  (import.meta.env.VITE_API_URL?.replace(/\/$/, "")) ||
-  "https://node-veilfi-jtae.onrender.com";  // REMOVE BARRA DUPLA
+/* ===========================================================
+    CONFIG
+=========================================================== */
 
-// ---------------------
-// SAFE PARSE
-// ---------------------
+const API_BASE = import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
+
+/* ===========================================================
+    SAFE PARSE
+=========================================================== */
 async function safeParse(res: Response) {
   const txt = await res.text().catch(() => "");
   try {
@@ -14,15 +16,16 @@ async function safeParse(res: Response) {
   }
 }
 
-// ---------------------
-// GET (sem credentials p/ Render)
-// ---------------------
+/* ===========================================================
+    GET
+=========================================================== */
 export async function getJSON(path: string, options: RequestInit = {}) {
-  const url = `${API_BASE}${path}`;
-
-  const res = await fetch(url, {
+  const res = await fetch(API_BASE + path, {
+    ...options,
     method: "GET",
+    credentials: "include",
     headers: {
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
@@ -36,14 +39,14 @@ export async function getJSON(path: string, options: RequestInit = {}) {
   return data;
 }
 
-// ---------------------
-// POST (sem credentials p/ Render)
-// ---------------------
+/* ===========================================================
+    POST
+=========================================================== */
 export async function postJSON(path: string, body: any, options: RequestInit = {}) {
-  const url = `${API_BASE}${path}`;
-
-  const res = await fetch(url, {
+  const res = await fetch(API_BASE + path, {
+    ...options,
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -60,34 +63,37 @@ export async function postJSON(path: string, body: any, options: RequestInit = {
   return data;
 }
 
-// ---------------------
-// AUTH
-// ---------------------
+/* ===========================================================
+    AUTH
+=========================================================== */
 export function importWallet(input: string) {
   return postJSON("/auth/import", { input });
 }
 
-// ---------------------
-// SESSION
-// ---------------------
+/* ===========================================================
+    SESSION
+=========================================================== */
 export function getSession() {
   return getJSON("/session/me");
 }
 
-// ---------------------
-// USER
-// ---------------------
+/* ===========================================================
+    BALANCE  (ROTA CORRETA DA SUA API)
+=========================================================== */
 export function postUserBalance(userPubkey: string) {
-  return postJSON("/user/balance", { userPubkey });
+  return postJSON("/balance", { userPubkey });
 }
 
-// ---------------------
-// SWAP / BUY
-// ---------------------
+/* ===========================================================
+    SWAP / BUY
+=========================================================== */
+
+// Criar ordem de compra
 export function createOrder(usdAmount: number, buyer: string) {
   return postJSON("/swap/buy/init", { usdAmount, buyer });
 }
 
+// Confirmar ordem (ASSINATURA DO PAGAMENTO)
 export function confirmOrder(orderId: string, paymentSignature: string, buyer: string) {
   return postJSON("/swap/buy/confirm", { orderId, paymentSignature, buyer });
 }
