@@ -1,32 +1,48 @@
-import { useState, useEffect } from "react";
-import { getJSON } from "../services/api";
+import { createContext, useContext, useState, useEffect } from "react";
 
-export function useAuth() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+type WalletSession = {
+  walletAddress: string;
+  secretKey: number[];
+};
 
-  async function refresh() {
-    try {
-      const data = await getJSON("/session/me");
+const AuthContext = createContext<any>(null);
 
-      if (data?.ok && data?.user?.walletPubkey) {
-        setWalletAddress(data.user.walletPubkey);
-      } else {
-        setWalletAddress(null);
-      }
+export function AuthProvider({ children }: any) {
+  const [session, setSession] = useState<WalletSession | null>(null);
 
-    } catch {
-      setWalletAddress(null);
-    }
-
-    setLoading(false);
-  }
-
+  // Carrega da localStorage ao iniciar
   useEffect(() => {
-    refresh();
-    const i = setInterval(refresh, 8000);
-    return () => clearInterval(i);
+    const saved = localStorage.getItem("wallet");
+    if (saved) {
+      setSession(JSON.parse(saved));
+    }
   }, []);
 
-  return { walletAddress, loading, refresh };
+  // Salva wallet no localStorage
+  function saveWallet(data: WalletSession) {
+    localStorage.setItem("wallet", JSON.stringify(data));
+    setSession(data);
+  }
+
+  // Atualiza sessão manualmente
+  function refresh() {
+    const saved = localStorage.getItem("wallet");
+    setSession(saved ? JSON.parse(saved) : null);
+  }
+
+  // Remove wallet
+  function logout() {
+    localStorage.removeItem("wallet");
+    setSession(null);
+  }
+
+  return (
+    <AuthContext.Provider value={{ session, saveWallet, logout, refresh }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
 }

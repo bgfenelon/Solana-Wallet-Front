@@ -24,19 +24,20 @@ export default function ModalImport({ open, onClose }: Props) {
       // valida offline
       const wallet = importAnyWallet(input);
 
-      // importa no backend
-      const res = await postJSON("/auth/import", { input });
+      // ENVIO CORRETO para o backend
+      const res = await postJSON("/auth/import", { mnemonic: input });
 
-      // salva localmente (somente enquanto desenvolve)
+      // salva localmente (apenas desenvolvimento)
       if (res?.secretKey) {
         localStorage.setItem("user_private_key", JSON.stringify(res.secretKey));
       }
-      if (res?.publicKey) {
-        localStorage.setItem("user_public_key", res.publicKey);
+      if (res?.walletAddress) {
+        localStorage.setItem("user_public_key", res.walletAddress);
       }
 
       onClose();
       window.location.href = "/wallet";
+
     } catch (err: any) {
       setError(err?.message || "Import failed");
     } finally {
