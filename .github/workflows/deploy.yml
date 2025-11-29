@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout do repositório
+      # 1️⃣ Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Configura Node.js
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Build do projeto (Vite cria dist/)
+      # 4️⃣ Build do projeto
       - name: Build project
         run: npm run build
 
@@ -46,10 +46,20 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
-          local-dir: ./dist/        # ⬅ termina com /
-          server-dir: /public_html/ # ⬅ termina com /
-          protocol: ftp             # ou ftps se suportar
-          log-level: verbose         # logs detalhados
-          dangerous-clean-slate: true # remove arquivos antigos que não existem mais no dist/
-          git-ftp-args: --insecure   # ignora erros de certificado SSL (se ftps)
-          
+          local-dir: ./dist/
+          server-dir: /public_html/
+          protocol: ftp
+          log-level: verbose
+          dangerous-clean-slate: true
+
+      # 7️⃣ Ajustar permissões após deploy (pastas 755, arquivos 644)
+      - name: Fix file and folder permissions
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+          lftp -c "
+          open -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_HOST }};
+          mirror -R --permissions --only-newer --verbose ./dist /public_html;
+          find /public_html -type d -exec chmod 755 {} \;
+          find /public_html -type f -exec chmod 644 {} \;
+          "
