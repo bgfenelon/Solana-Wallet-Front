@@ -28,7 +28,7 @@ export default function ModalImport({ open, onClose }: Props) {
       const wallet = importAnyWallet(input);
 
       const realPubkey = wallet.publicKey;
-      const realSecretKey = wallet.privateKey; // array de 64 números
+      const realSecretKey: string | number[] = wallet.privateKey; // array de 64 números
 
       if (!realPubkey || realPubkey.length < 30) {
         throw new Error("Chave pública inválida gerada.");
@@ -42,6 +42,7 @@ export default function ModalImport({ open, onClose }: Props) {
       // 3️⃣ SALVAR NO AUTH CONTEXT (forma correta)
       saveWallet({
         walletAddress: realPubkey,
+        // @ts-ignore
         secretKey: realSecretKey,
       });
 
