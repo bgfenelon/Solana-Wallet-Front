@@ -1,0 +1,8 @@
+static_sites:
+  - name: frontend
+    source_dir: /
+    build_command: |
+      npm install
+      npm run build
+    output_dir: dist  # para Vite
+    # output_dir: build  # para Create React App
