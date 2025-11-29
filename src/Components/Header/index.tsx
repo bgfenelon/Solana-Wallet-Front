@@ -6,7 +6,7 @@ import { Button } from "../PrivacyFeatures/styles";
 import ModalCreate from "../ModalCreate";
 
 export function Header() {
-  const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(false);
     const [openCreate, setOpenCreate] = useState(false);
 
   const smoothScroll = (target: string) => {
@@ -27,7 +27,7 @@ export function Header() {
 
   return (
     <S.MainContainer>
-      <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
+            <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
       <S.Header>
         <div>
           <nav>
@@ -46,13 +46,12 @@ export function Header() {
             <S.Links>
               <button onClick={() => smoothScroll("#features")}>Features</button>
               <button onClick={() => smoothScroll("#security")}>Security</button>
-              <button onClick={() => smoothScroll("#privacy")}>Privacy</button>
               <button onClick={() => smoothScroll("#docs")}>Docs</button>
             </S.Links>
 
-            <S.Button>
-              Launch App →
-            </S.Button>
+            <PrimaryButton className="mobile-none" onClick={() => setOpenCreate(!openCreate)}>
+              Get Started Now →
+            </PrimaryButton>
 
             {/* BOTÃO MOBILE */}
             <S.MenuButton onClick={() => setOpen(!open)} aria-label={open ? "Close menu" : "Open menu"}>
@@ -76,14 +75,13 @@ export function Header() {
             <button onClick={() => smoothScroll("#privacy")}>Verifi</button>
             <button onClick={() => smoothScroll("#privacy")}>Features</button>
             <a href="https://v0-penta-docs-clone.vercel.app/" onClick={() => smoothScroll("#docs")}>Docs</a>
-
-            <S.Button
-            >
-              Launch App →
-            </S.Button>
+           
+            <PrimaryButton onClick={() => setOpenCreate(!openCreate)}>
+              Get Started Now →
+            </PrimaryButton>
+          
           </div>
         </S.MobileInner>
       </S.MobileMenu>
     </S.MainContainer>
-  );
-}
+  )}

@@ -6,6 +6,7 @@ import * as S from "./styles";
 import { Shield, Eye, Lock, Zap, Key, CheckCircle2 } from "lucide-react";
 
 export function PrivacyFeatures() {
+  const [open, setOpen] = useState(false);
   
   const [openCreate, setOpenCreate] = useState(false);
   const [openImport, setOpenImport] = useState(false);
@@ -51,6 +52,7 @@ export function PrivacyFeatures() {
 
   return (
     <S.Section id="privacy">
+      
               <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
               <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
       <S.Container>

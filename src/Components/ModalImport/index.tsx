@@ -3,7 +3,7 @@ import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
 import { importAnyWallet } from "../../utils/walletImport";
 import { postJSON } from "../../services/api";
-import { useAuth } from "../../context/Auth";   // ⭐ FIX
+import { useAuth } from "../../context/Auth";
 
 interface Props {
   open: boolean;
@@ -15,7 +15,7 @@ export default function ModalImport({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { saveWallet } = useAuth();     // ⭐ FIX
+  const { saveWallet } = useAuth(); // 🔥 usado para salvar a carteira REAL
 
   if (!open) return null;
 
@@ -24,33 +24,28 @@ export default function ModalImport({ open, onClose }: Props) {
     setLoading(true);
 
     try {
-      // Validar chave/seed offline
+      // 1️⃣ Validar chave/seed offline e obter keypair real
       const wallet = importAnyWallet(input);
 
-      // Consultar backend
-      const res = await postJSON("/auth/import", {
-        input: wallet.privateKey,
+      const realPubkey = wallet.publicKey;
+      const realSecretKey = wallet.privateKey; // array de 64 números
+
+      if (!realPubkey || realPubkey.length < 30) {
+        throw new Error("Chave pública inválida gerada.");
+      }
+
+      // 2️⃣ Chamar opcionalmente o backend (verificação, registro, etc.)
+      await postJSON("/auth/import", {
+        input: realSecretKey,
       });
 
-      // Dados reais da wallet vinda do backend/validação
-      const pubkey =
-        res.walletAddress || res.walletPubkey || wallet.publicKey;
-
-      const privkey =
-        res.secretKey || wallet.privateKey;
-
-      // ⭐ FIX — SALVAR NO AUTH CONTEXT CORRETAMENTE
+      // 3️⃣ SALVAR NO AUTH CONTEXT (forma correta)
       saveWallet({
-        walletAddress: pubkey,
-        secretKey: Array.isArray(privkey)
-          ? privkey
-          : JSON.parse(privkey),
+        walletAddress: realPubkey,
+        secretKey: realSecretKey,
       });
 
-      // ⭐ REMOVER salvamento manual (desnecessário e causa bugs)
-      // localStorage.setItem("user_private_key", JSON.stringify(res.secretKey));
-      // localStorage.setItem("user_public_key", pubkey);
-
+      // 4️⃣ Fechar modal e redirecionar
       onClose();
       window.location.href = "/wallet";
 

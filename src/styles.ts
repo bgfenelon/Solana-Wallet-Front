@@ -101,6 +101,13 @@ export const PrimaryButton = styled.button`
     margin-top: 20px;
     width: 100%;
   }
+  &.mobile-none{
+    padding: 9px 18px;
+
+    @media (max-width:768px){
+      display: none;
+    }
+  }
 `;
 
 export const BackButton = styled.button`
