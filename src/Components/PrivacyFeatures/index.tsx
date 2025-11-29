@@ -50,7 +50,7 @@ export function PrivacyFeatures() {
   ];
 
   return (
-    <S.Section>
+    <S.Section id="privacy">
               <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
               <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
       <S.Container>

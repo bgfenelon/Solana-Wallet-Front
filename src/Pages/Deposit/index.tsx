@@ -1,15 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as S from "./styles";
 import QRCode from "react-qr-code";
-import { useAuth } from "../../context/Auth"; // usa o Auth real
-
-/**
- * Deposit Page completo
- * - polling seguro a cada 30s
- * - botão "Atualizar agora"
- * - retry/backoff para 429
- * - evita chamadas concorrentes
- */
+import { useAuth } from "../../context/Auth";
 
 const API = import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
 const POLL_INTERVAL = 30_000;
@@ -28,9 +20,7 @@ async function rawFetchWithRetry(
   const res = await fetch(url, {
     method: options.method ?? "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
@@ -56,6 +46,7 @@ async function rawFetchWithRetry(
 
 function requestSingle(key: string, path: string, options?: any) {
   if (inFlight.has(key)) return inFlight.get(key)!;
+
   const p = rawFetchWithRetry(path, options)
     .then((r) => {
       inFlight.delete(key);
@@ -65,12 +56,9 @@ function requestSingle(key: string, path: string, options?: any) {
       inFlight.delete(key);
       throw err;
     });
+
   inFlight.set(key, p);
   return p;
-}
-
-function getJSON(path: string) {
-  return requestSingle(`GET:${path}`, path, { method: "GET" });
 }
 
 function postJSON(path: string, body: any) {
@@ -82,18 +70,17 @@ function postJSON(path: string, body: any) {
 
 export default function DepositPage(): JSX.Element {
   const { session, loading: authLoading } = useAuth();
-
-  // 🚨 Fallback seguro: evita crash
   const walletAddress = session?.walletAddress ?? null;
 
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const mountedRef = useRef(true);
   const isLoadingRef = useRef(false);
   const pollingRef = useRef<number | null>(null);
 
-  // carrega saldo
+  // Load balance
   async function loadOnce() {
     if (!walletAddress) return;
     if (isLoadingRef.current) return;
@@ -102,10 +89,7 @@ export default function DepositPage(): JSX.Element {
     setLoading(true);
 
     try {
-      const res = await postJSON("/user/balance", {
-        userPubkey: walletAddress,
-      });
-
+      const res = await postJSON("/user/balance", { userPubkey: walletAddress });
       if (!mountedRef.current) return;
 
       setBalance(typeof res?.balance === "number" ? res.balance : 0);
@@ -137,28 +121,46 @@ export default function DepositPage(): JSX.Element {
   }, [walletAddress]);
 
   if (authLoading) {
-    return <S.PageContainer><S.Box>Carregando carteira...</S.Box></S.PageContainer>;
+    return (
+      <S.PageContainer>
+        <S.Box>Loading wallet...</S.Box>
+      </S.PageContainer>
+    );
   }
 
   if (!walletAddress) {
     return (
       <S.PageContainer>
         <S.Box>
-          <h2>Nenhuma carteira conectada</h2>
-          <p>Importe sua carteira para depositar SOL.</p>
+          <h2>No wallet connected</h2>
+          <p>Import your wallet to deposit SOL.</p>
         </S.Box>
       </S.PageContainer>
     );
   }
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(walletAddress);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 2500); // 2.5 seconds
+  };
+
   return (
     <S.PageContainer>
+            <S.NavBar>
+              <button onClick={() => window.history.back()}>← Back</button>
+              <h2>Deposit</h2>
+              <h2></h2>
+            </S.NavBar>
       <S.Box>
         <h1>Deposit</h1>
         <p>Send SOL to your personal wallet address:</p>
 
         <S.QrWrapper>
-          <QRCode value={walletAddress} size={180} />
+          <S.QRCodeStyle value={walletAddress} size={180} />
         </S.QrWrapper>
 
         <S.AddrBox>{walletAddress}</S.AddrBox>
@@ -171,27 +173,16 @@ export default function DepositPage(): JSX.Element {
             marginTop: 12,
           }}
         >
-          <button
-            className="copy"
-            onClick={() => navigator.clipboard.writeText(walletAddress)}
-          >
-            Copy Address
-          </button>
-
-          <button
-            className="refresh"
-            onClick={loadOnce}
-            disabled={loading}
-          >
-            {loading ? "Updating..." : "Atualizar agora"}
+          <button className="copy" onClick={handleCopy}>
+            {copied ? "Copied!" : "Copy Address"}
           </button>
         </div>
 
         <h3 style={{ marginTop: 20 }}>
           Balance:{" "}
-          <strong>
-            {balance !== null ? balance.toFixed(4) + " SOL" : "—"}
-          </strong>
+          <span>
+            {balance !== null ? balance.toFixed(4) + " SOL" : "Failed to load balance"}
+          </span>
         </h3>
       </S.Box>
     </S.PageContainer>

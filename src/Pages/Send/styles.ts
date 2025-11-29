@@ -5,11 +5,48 @@ export const PageContainer = styled.div`
   min-height: 100vh;
   padding: 28px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: flex-start;
+  align-items: center;
   background: var(--background);
   color: var(--foreground);
 `;
+
+
+/* NAVBAR FIXED + RESPONSIVA */
+export const NavBar = styled.div`
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: left ;
+    background: none;
+    border: none;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 8px;
+    flex: 1;
+
+    &:hover {
+      color: var(--foreground);
+    }
+  }
+
+  h2 {
+    flex: 1;
+    font-size: 1.2rem;
+    color: var(--foreground);
+  }
+`;
+
 
 export const Box = styled.div`
   width: 100%;

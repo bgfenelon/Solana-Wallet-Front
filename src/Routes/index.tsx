@@ -7,6 +7,8 @@ import Activity from "../Pages/Activity";
 import WalletWithdraw from "../Pages/WalletWithdraw";
 import Swap from "../Pages/Swap";
 import Send from "../Pages/Send";
+import PaymentHistory from "../Pages/PaymentHistory";
+
 
 
 export function AppRouter() {
@@ -20,6 +22,8 @@ export function AppRouter() {
       <Route path="/activity" element={<Activity />} />
       <Route path="/swap" element={<Swap />} />
       <Route path="/send" element={<Send />} />
+      <Route path="/paymentHistory" element={<PaymentHistory />} />
+
 
     </Routes>
   );

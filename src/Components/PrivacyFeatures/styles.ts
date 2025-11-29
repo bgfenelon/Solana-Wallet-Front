@@ -14,6 +14,16 @@ export const Section = styled.section`
   );
   display: flex;
   align-items: center;
+
+  /* Responsivo */
+  @media (max-width: 768px) {
+    padding: 72px 20px;
+    min-height: auto;
+  }
+
+  @media (max-width: 480px) {
+    padding: 56px 16px;
+  }
 `;
 
 /* CONTAINER */
@@ -21,13 +31,17 @@ export const Container = styled.div`
   margin: 0 auto;
   max-width: ${sizes.maxWidth};
   width: 100%;
+
+  @media (max-width: 768px) {
+    max-width: 92%;
+  }
 `;
 
 export const Button = styled.button`
   background-color: transparent;
   border: 0;
   cursor: pointer;
-`
+`;
 
 /* HEADER */
 export const Header = styled.div`
@@ -39,6 +53,14 @@ export const Header = styled.div`
     font-weight: bold;
     color: var(--foreground);
     margin-bottom: 16px;
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+      font-size: 2rem;
+    }
+    @media (max-width: 480px) {
+      font-size: 1.8rem;
+    }
   }
 
   p {
@@ -46,6 +68,15 @@ export const Header = styled.div`
     color: var(--muted-foreground);
     max-width: 680px;
     margin: 0 auto;
+
+    @media (max-width: 768px) {
+      font-size: 1rem;
+      max-width: 90%;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 0.95rem;
+    }
   }
 `;
 
@@ -61,6 +92,12 @@ export const FeaturesGrid = styled.div`
   @media (min-width: 1024px) {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  /* Mobile */
+  @media (max-width: 480px) {
+    margin-bottom: 64px;
+    gap: 20px;
+  }
 `;
 
 /* CARD */
@@ -75,6 +112,10 @@ export const Card = styled.div`
   &:hover {
     background: var(--secondary);
     border-color: color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+
+  @media (max-width: 480px) {
+    padding: 24px;
   }
 `;
 
@@ -93,13 +134,17 @@ export const IconWrap = styled.div`
   background: color-mix(in oklab, var(--primary) 20%, transparent);
   border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
 
-  /* glow */
   filter: drop-shadow(0 0 12px color-mix(in oklab, var(--primary) 40%, transparent));
 
   transition: transform 0.3s;
 
   ${Card}:hover & {
     transform: scale(1.1);
+  }
+
+  @media (max-width: 480px) {
+    width: 44px;
+    height: 44px;
   }
 `;
 
@@ -114,12 +159,20 @@ export const Title = styled.h3`
   ${Card}:hover & {
     color: var(--primary);
   }
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
 `;
 
 /* DESCRIPTION */
 export const Description = styled.p`
   color: var(--muted-foreground);
   line-height: 1.6;
+
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
+  }
 `;
 
 /* CTA BOX */
@@ -140,6 +193,14 @@ export const CTA = styled.div`
     font-weight: bold;
     color: var(--foreground);
     margin-bottom: 16px;
+
+    @media (max-width: 768px) {
+      font-size: 1.6rem;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 1.4rem;
+    }
   }
 
   p {
@@ -147,5 +208,19 @@ export const CTA = styled.div`
     color: var(--muted-foreground);
     max-width: 520px;
     margin: 0 auto 32px auto;
+
+    @media (max-width: 768px) {
+      font-size: 1rem;
+      max-width: 90%;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 0.95rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 32px;
+    border-radius: 24px;
   }
 `;

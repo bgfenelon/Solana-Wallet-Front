@@ -15,7 +15,7 @@ export function Hero() {
       <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
       <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
 
-      <S.MainHeroContent>
+      <S.MainHeroContent >
         <S.BackgroundGrid>
           <div />
         </S.BackgroundGrid>
