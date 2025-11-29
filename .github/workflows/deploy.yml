@@ -47,7 +47,7 @@ jobs:
           protocol: ftp                         # CORRETO
           port: 21                               # CORRETO
           local-dir: ./dist/
-          server-dir: /public_html               # CORRETO
+          server-dir: /public_html/              # CORRETO
           security: loose                        # substitui "secure: false"
           dangerous-clean-slate: true
           log-level: verbose
