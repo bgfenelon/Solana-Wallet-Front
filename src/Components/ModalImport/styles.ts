@@ -105,7 +105,6 @@ export const Actions = styled.div`
 `;
 
 export const SecondaryButton = styled.button`
-  width: 100px;
   padding: 14px;
   border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
   border-radius: 10px;

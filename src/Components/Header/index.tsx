@@ -50,7 +50,7 @@ export function Header() {
             </S.Links>
 
             <PrimaryButton className="mobile-none" onClick={() => setOpenCreate(!openCreate)}>
-              Get Started Now →
+              launch App →
             </PrimaryButton>
 
             {/* BOTÃO MOBILE */}
