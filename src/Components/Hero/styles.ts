@@ -1,27 +1,37 @@
-
-
 import styled from "styled-components";
 import { sizes, fontSizes } from "../../styles";
 
 /* Container principal do Hero */
 export const MainHeroContent = styled.section`
   position: relative;
-  padding-top: 150px; 
+  padding-top: 150px;
   padding-bottom: 20%;
   padding-left: 6%;
   padding-right: 6%;
   width: 100%;
   overflow: hidden;
-  min-height: 90vh;
+  min-height: 100vh;
 
-  /* Gradiente principal */
-  background: linear-gradient(
-    135deg,
-    #000000 0%,
-    #360b69ff 50%,
-    #000000 100%
-  );
+  background: linear-gradient(135deg, #000000 0%, #360b69ff 50%, #000000 100%);
   height: calc(100vh - 120px);
+
+  /* Responsivo */
+  @media (max-width: 1024px) {
+    padding-top: 120px;
+  }
+
+  @media (max-width: 768px) {
+    min-height: 100%;
+    padding-top: 10px;
+    padding-left: 4%;
+    padding-right: 4%;
+    padding-bottom: 25%;
+  }
+
+  @media (max-width: 480px) {
+    padding-top: 80px;
+    padding-bottom: 30%;
+  }
 `;
 
 /* Grid animado do background */
@@ -29,7 +39,6 @@ export const BackgroundGrid = styled.div`
   position: absolute;
   inset: 0;
   opacity: 0.2;
-  
 
   > div {
     position: absolute;
@@ -39,13 +48,14 @@ export const BackgroundGrid = styled.div`
         rgba(157, 78, 221, 0.1) 1px,
         transparent 1px
       ),
-      linear-gradient(
-        90deg,
-        rgba(157, 78, 221, 0.1) 1px,
-        transparent 1px
-      );
+      linear-gradient(90deg, rgba(157, 78, 221, 0.1) 1px, transparent 1px);
 
     background-size: 50px 50px;
+
+    /* Responsivo */
+    @media (max-width: 480px) {
+      background-size: 35px 35px;
+    }
   }
 `;
 
@@ -56,6 +66,11 @@ export const HeroInner = styled.div`
   margin: 0 auto;
   text-align: center;
   position: relative;
+
+  @media (max-width: 768px) {
+    max-width: 90%;
+    padding-top: 20px;
+  }
 `;
 
 /* Badge */
@@ -72,7 +87,6 @@ export const Badge = styled.div`
   background: color-mix(in oklab, var(--primary) 10%, transparent);
   border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
 
-  /* Glow */
   box-shadow: 
     0 0 20px rgba(157, 78, 221, 0.3),
     inset 0 0 20px rgba(157, 78, 221, 0.1);
@@ -80,6 +94,14 @@ export const Badge = styled.div`
   span {
     color: var(--muted-foreground);
     font-size: ${fontSizes.small};
+  }
+
+  /* Responsivo */
+  @media (max-width: 480px) {
+    padding: 6px 14px;
+    span {
+      font-size: 0.75rem;
+    }
   }
 `;
 
@@ -104,15 +126,33 @@ export const MainHeading = styled.h1`
       color: #ffffff;
     }
   }
+
+  /* Responsivo */
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem;
+  }
 `;
 
 /* Subtítulo */
 export const Subheading = styled.p`
-  font-size: ${fontSizes.medium};
+  font-size: ${fontSizes.large};
   color: var(--muted-foreground);
-  max-width: 720px;
+  max-width: 700px;
   margin: 0 auto 48px auto;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    max-width: 90%;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
+  }
 `;
 
 /* Container dos botões */
@@ -127,10 +167,11 @@ export const Buttons = styled.div`
   @media (min-width: 640px) {
     flex-direction: row;
   }
+
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
 `;
-
-/* Botão primário */
-
 
 /* Botão secundário */
 export const SecondaryButton = styled.button`
@@ -147,6 +188,11 @@ export const SecondaryButton = styled.button`
   &:hover {
     background: color-mix(in oklab, var(--primary) 10%, transparent);
   }
+
+  @media (max-width: 480px) {
+    padding: 14px 24px;
+    font-size: 0.9rem;
+  }
 `;
 
 /* Lista de features */
@@ -162,14 +208,21 @@ export const Features = styled.div`
     gap: 8px;
     color: var(--muted-foreground);
     font-size: ${fontSizes.small};
-    
-    
-    .glow-icon{
-    stroke: var(--primary);
-    box-shadow: 
-    0 0 20px rgba(157, 78, 221, 0.3),
-    inset 0 0 20px rgba(157, 78, 221, 0.1);
 
+    .glow-icon {
+      stroke: var(--primary);
+      box-shadow: 
+        0 0 20px rgba(157, 78, 221, 0.3),
+        inset 0 0 20px rgba(157, 78, 221, 0.1);
+    }
+  }
+
+  /* Responsivo */
+  @media (max-width: 480px) {
+    gap: 16px;
+
+    div {
+      font-size: 0.8rem;
     }
   }
 `;

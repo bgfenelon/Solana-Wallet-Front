@@ -22,7 +22,7 @@ export const fontSizes = {
   medium: "1rem",
   large: "1.25rem",
   xlarge: "2rem",
-  xxlarge: "3rem",
+  xxlarge: "5rem",
 };
 
 export const fonts = {
@@ -65,6 +65,9 @@ button{
   body{
     background-color: ${colors.background};
   }
+  html {
+  scroll-behavior: smooth;
+}
   
 `;
 
@@ -94,4 +97,13 @@ export const PrimaryButton = styled.button`
    padding: 10px 15px;
    font-size: 90%;
   }
+  &.big{
+    margin-top: 20px;
+    width: 100%;
+  }
 `;
+
+export const BackButton = styled.button`
+position: absolute;
+left: 10;
+`

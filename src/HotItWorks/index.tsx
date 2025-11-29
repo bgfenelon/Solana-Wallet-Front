@@ -29,7 +29,7 @@ export function HowItWorks() {
   ];
 
   return (
-    <S.Section>
+    <S.Section id="features">
       <S.Container>
         <S.Header>
           <h2>How Veilfi Works</h2>
