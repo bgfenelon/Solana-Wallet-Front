@@ -10,31 +10,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout do repositório
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      # 3️⃣ Instala dependências
       - name: Install dependencies
         run: npm install
 
-      # 4️⃣ Build do projeto
       - name: Build project
         run: npm run build
 
-      # 5️⃣ Ajustar permissões localmente (pastas 755, arquivos 644)
       - name: Fix permissions locally
         run: |
           find dist -type d -exec chmod 755 {} \;
           find dist -type f -exec chmod 644 {} \;
 
-      # 6️⃣ Cria .htaccess para SPA React
       - name: Create .htaccess for SPA
         run: |
           echo "RewriteEngine On" > dist/.htaccess
@@ -44,17 +38,16 @@ jobs:
           echo "RewriteCond %{REQUEST_FILENAME} !-d" >> dist/.htaccess
           echo "RewriteRule . /index.html [L]" >> dist/.htaccess
 
-      # 7️⃣ Deploy via FTP/FTPS para Hostinger (ignora verificação SSL)
       - name: Deploy build folder to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
+          server: ${{ secrets.FTP_HOST }}       # veilfi.space
+          username: ${{ secrets.FTP_USERNAME }} # u426106609
           password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT }}
-          local-dir: ./dist/        # ⬅ termina com /
-          server-dir: /public_html/ # ⬅ termina com /
-          protocol: ftps            # ⬅ se você estiver usando FTPS
-          secure: false             # ⬅ desativa verificação de certificado
-          log-level: verbose
+          protocol: ftp                         # CORRETO
+          port: 21                               # CORRETO
+          local-dir: ./dist
+          server-dir: /public_html               # CORRETO
+          security: loose                        # substitui "secure: false"
           dangerous-clean-slate: true
+          log-level: verbose
