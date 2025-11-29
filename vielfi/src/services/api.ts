@@ -1,12 +1,17 @@
-/* ===========================================================
-    CONFIG
-=========================================================== */
+// src/services/api.ts
+import { createOrder } from "../../services/api";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
 
-/* ===========================================================
-    SAFE PARSE
-=========================================================== */
+const API_BASE = (import.meta as any).env?.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
+
+export async function createOrder(data: any) {
+  return postJSON("/order/create", data);
+}
+
+export async function confirmOrder(data: any) {
+  return postJSON("/order/confirm", data);
+}
+/** Safe parse */
 async function safeParse(res: Response) {
   const txt = await res.text().catch(() => "");
   try {
@@ -16,9 +21,6 @@ async function safeParse(res: Response) {
   }
 }
 
-/* ===========================================================
-    GET
-=========================================================== */
 export async function getJSON(path: string, options: RequestInit = {}) {
   const res = await fetch(API_BASE + path, {
     ...options,
@@ -31,22 +33,15 @@ export async function getJSON(path: string, options: RequestInit = {}) {
   });
 
   const data = await safeParse(res);
-
-  if (!res.ok) {
-    throw new Error(data.message || `GET ${path} → ${res.status}`);
-  }
-
+  if (!res.ok) throw new Error(data.message || `GET ${path} → ${res.status}`);
   return data;
 }
 
-/* ===========================================================
-    POST
-=========================================================== */
 export async function postJSON(path: string, body: any, options: RequestInit = {}) {
   const res = await fetch(API_BASE + path, {
     ...options,
     method: "POST",
-    credentials: "include",
+    credentials: "include", // ⬅️ fundamental
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -55,45 +50,25 @@ export async function postJSON(path: string, body: any, options: RequestInit = {
   });
 
   const data = await safeParse(res);
-
   if (!res.ok) {
     throw new Error(data.message || `POST ${path} → ${res.status}`);
   }
-
   return data;
 }
 
-/* ===========================================================
-    AUTH
-=========================================================== */
-export function importWallet(input: string) {
+/* API helpers usados no front */
+export function importWalletAPI(input: string) {
   return postJSON("/auth/import", { input });
 }
 
-/* ===========================================================
-    SESSION
-=========================================================== */
-export function getSession() {
+export function getSessionAPI() {
   return getJSON("/session/me");
 }
 
-/* ===========================================================
-    BALANCE  (ROTA CORRETA DA SUA API)
-=========================================================== */
-export function postUserBalance(userPubkey: string) {
-  return postJSON("/user/balance", { userPubkey });
+export async function postUserBalance(pubkey: string) {
+  return postJSON("/wallet/balance", { userPubkey: pubkey });
 }
 
-/* ===========================================================
-    SWAP / BUY
-=========================================================== */
-
-// Criar ordem de compra
-export function createOrder(usdAmount: number, buyer: string) {
-  return postJSON("/swap/buy/init", { usdAmount, buyer });
-}
-
-// Confirmar ordem (ASSINATURA DO PAGAMENTO)
-export function confirmOrder(orderId: string, paymentSignature: string, buyer: string) {
-  return postJSON("/swap/buy/confirm", { orderId, paymentSignature, buyer });
+export function postSend(to: string, amount: number) {
+  return postJSON("/wallet/send", { to, amount });
 }

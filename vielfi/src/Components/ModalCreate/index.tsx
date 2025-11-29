@@ -64,10 +64,11 @@ const wallet = useMemo(() => {
 
     try {
       // Envia seed phrase ao backend
-      await postJSON("/auth/import", {
-        input: wallet.mnemonic,
-        name: name.trim(),
-      });
+    await postJSON("/auth/import", {
+    input: JSON.stringify(wallet.secretKeyArray),
+    name: name.trim(),
+    });
+
 
       // Salva no AuthContext
       saveWallet({
