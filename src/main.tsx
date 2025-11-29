@@ -4,6 +4,8 @@ import App from "./App";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/Auth";
 import { ToastProvider } from "./Components/Toast";
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
