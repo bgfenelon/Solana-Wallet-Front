@@ -80,7 +80,7 @@ function postJSON(path: string, body: any) {
   });
 }
 
-export default function DepositPage(): JSX.Element {
+export default function DepositPage(): React.ReactElement {
   const { session, loading: authLoading } = useAuth();
 
   // 🚨 Fallback seguro: evita crash

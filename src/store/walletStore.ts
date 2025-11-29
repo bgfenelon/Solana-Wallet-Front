@@ -1,4 +1,10 @@
 import { mnemonicToSeedSync, validateMnemonic } from "@scure/bip39";
+import * as englishWordlistModule from "@scure/bip39/wordlists/english";
+// Accept multiple export shapes: { english: [...] } OR default export [...]: normalize to string[]
+const englishWordlist: string[] =
+  (englishWordlistModule as any).english ??
+  (englishWordlistModule as any).default ??
+  (englishWordlistModule as any);
 import { Keypair } from "@solana/web3.js";
 
 /**
@@ -14,7 +20,7 @@ export function importAnyWallet(input: string) {
 
   // Se tiver 12 ou mais palavras, tentamos validar como seed phrase
   if (words.length >= 12) {
-    if (!validateMnemonic(clean)) {
+    if (!validateMnemonic(clean, englishWordlist)) {
       throw new Error("Invalid seed phrase");
     }
 

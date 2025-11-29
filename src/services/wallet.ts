@@ -1,7 +1,7 @@
 // server/routes/wallet.js
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { getSolanaWalletInfo } = require("../services/solana");
+import { getSolanaWalletInfo } from "../services/solana";
 
 // GET /wallet/balance?address=XXXX
 router.get("/user/balance", async (req, res) => {
@@ -14,11 +14,10 @@ router.get("/user/balance", async (req, res) => {
 
     const info = await getSolanaWalletInfo(address);
     return res.json(info);
-
   } catch (err) {
     console.error("GET /wallet/balance error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
 
-module.exports = router;
+export default router;

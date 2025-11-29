@@ -4,7 +4,8 @@ import { withdrawSol } from "../../services/withdrawSol";
 import { PrimaryButton } from "../../styles";
 
 export function WalletWithdraw() {
-  const userId = import.meta.env.VITE_USER_ID;
+  // agora tipado via src/env.d.ts
+  const userId = import.meta.env?.VITE_USER_ID ?? "";
 
   const [destination, setDestination] = useState("");
   const [amount, setAmount] = useState("");

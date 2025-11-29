@@ -1,4 +1,4 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
 const { getUser } = require("../sessionMemory");
 
@@ -8,4 +8,4 @@ router.get("/me", (req, res) => {
   res.json({ user });
 });
 
-module.exports = router;
+export default router;

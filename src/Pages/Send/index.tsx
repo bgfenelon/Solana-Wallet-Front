@@ -9,7 +9,17 @@ export default function SendPage() {
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
 
-  const from = auth?.user?.walletPubkey || "";
+  // Add runtime type guard for `user` vs `session`
+  function hasUser(obj: any): obj is { user: { walletPubkey?: string } } {
+    return !!obj && "user" in obj;
+  }
+
+  const from = (() => {
+    if (!auth) return "";
+    if (hasUser(auth)) return auth.user?.walletPubkey ?? "";
+    return (auth as any).session?.user?.walletPubkey ?? "";
+  })();
+
   const fromSecretKey = JSON.parse(localStorage.getItem("user_private_key") || "[]");
 
   async function handleSend() {
