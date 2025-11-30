@@ -1,74 +1,57 @@
-// src/Pages/Send/index.tsx
 import React, { useState } from "react";
 import * as S from "./styles";
-import { useAuth } from "../../hooks/useAuth";
-import { PrimaryButton } from "../../styles";
-import { CircleAlert  }  from "lucide-react";
+import { useAuth } from "../../context/Auth";
+import { postJSON } from "../../services/api";
+
 export default function SendPage() {
-  const auth = useAuth();
+  const { session } = useAuth();
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
-  const [error, setError] = useState("");
-
-  const from = auth?.session?.walletAddress || "";
-  const fromSecretKey = JSON.parse(localStorage.getItem("user_private_key") || "[]");
+  const [loading, setLoading] = useState(false);
 
   async function handleSend() {
-    setError("");
+    if (!session?.walletSecret) {
+      alert("Wallet not loaded");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const res = await fetch("https://node-veilfi-jtae.onrender.com/wallet/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          fromSecretKey,
-          to,
-          amount: Number(amount),
-        }),
+      const res = await postJSON("/wallet/send", {
+        fromSecret: session.walletSecret,
+        to,
+        amount: parseFloat(amount),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Send failed");
-      }
-
-      alert("Transaction sent: " + data.signature);
-
-    } catch (err) {
-      setError(err.message);
+      alert("Success! TX: " + res.signature);
+    } catch (err: any) {
+      alert("Send error: " + err.message);
     }
+
+    setLoading(false);
   }
 
   return (
     <S.PageContainer>
-                  <S.NavBar>
-                    <button onClick={() => window.history.back()}>← Back</button>
-                    <h2>Deposit</h2>
-                    <h2></h2>
-                  </S.NavBar>
       <S.Box>
-        <h2>Send</h2>
-        <S.Field>
-          <label>Recipient address</label>
-          <input value={to} onChange={(e) => setTo(e.target.value)} />
-        </S.Field>
+        <h1>Send SOL</h1>
 
-        <S.Field>
-          <label>Amount (SOL)</label>
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(",", "."))}
-          />
-        </S.Field>
+        <input
+          placeholder="Destination wallet"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+        />
 
-        {error && <div style={{ color: "red" }}>{error}</div>}
+        <input
+          placeholder="Amount (SOL)"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
 
-        <PrimaryButton onClick={handleSend} className="primary big">
-          Send
-        </PrimaryButton>
-        <S.Info><CircleAlert className="alert"/> Teste</S.Info>
+        <button disabled={loading} onClick={handleSend}>
+          {loading ? "Sending..." : "Send"}
+        </button>
       </S.Box>
     </S.PageContainer>
   );
