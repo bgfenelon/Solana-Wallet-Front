@@ -1,109 +1,55 @@
 import React, { useState } from "react";
 import * as S from "./styles";
 import { useAuth } from "../../context/Auth";
+import { postJSON } from "../../services/api";
 
 export default function SwapPage() {
   const { session } = useAuth();
-  const walletAddress = session?.walletAddress ?? "";
-
-  const [solAmount, setSolAmount] = useState("");
-  const [quote, setQuote] = useState<any>(null);
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const API = import.meta.env.VITE_API_URL;
-
-  async function getQuote() {
-    if (!solAmount) return;
+  async function handleSwap() {
+    if (!session?.secretKey) return alert("Wallet not loaded.");
+    if (!session?.walletAddress) return alert("Wallet missing publicKey.");
+    if (!amount || Number(amount) <= 0) return alert("Enter a valid amount.");
 
     setLoading(true);
-    setError("");
-    setQuote(null);
 
-    try {
-      const res = await fetch(`${API}/swap/quote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ solAmount: Number(solAmount) }),
-      });
+    const res = await postJSON("/swap/buy", {
+      carteiraUsuarioPublica: session.walletAddress,
+      carteiraUsuarioPrivada: JSON.stringify(session.secretKey),
+      amountSOL: Number(amount),
+    });
 
-      const text = await res.text(); // pega texto bruto
+    setLoading(false);
 
-      if (!res.ok) {
-        console.error("Quote failed:", text);
-        setError("Error fetching quote.");
-        return;
-      }
-
-      const data = JSON.parse(text);
-      setQuote(data);
-    } catch (err) {
-      console.error("Quote error:", err);
-      setError("Could not get quote. API did not return JSON.");
-    } finally {
-      setLoading(false);
+    if (res.error) {
+      alert("Error: " + res.error);
+      return;
     }
-  }
 
-  async function executeSwap() {
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch(`${API}/swap/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          solAmount: Number(solAmount),
-          userWallet: walletAddress,
-        }),
-      });
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        console.error("Execute swap failed:", text);
-        setError("Swap execution failed.");
-        return;
-      }
-
-      const data = JSON.parse(text);
-      alert("Swap completed: " + data.signature);
-      setQuote(null);
-    } catch (err) {
-      console.error("Execute swap error:", err);
-      setError("Swap error. API returned no valid JSON.");
-    } finally {
-      setLoading(false);
-    }
+    alert(
+      `Swap successful!\n\n` +
+        `SOL Debited: ${res.sol_debitado}\n` +
+        `PUMP Credited: ${res.pump_creditado}`
+    );
   }
 
   return (
     <S.Container>
       <S.Box>
-        <h1>Token Swap</h1>
+        <h1>Swap SOL to Token</h1>
 
         <input
           type="number"
-          placeholder="Amount of SOL"
-          value={solAmount}
-          onChange={(e) => setSolAmount(e.target.value)}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Amount in SOL"
         />
 
-        <button onClick={getQuote} disabled={loading}>
-          {loading ? "Loading..." : "Get Quote"}
+        <button disabled={loading} onClick={handleSwap}>
+          {loading ? "Swapping..." : "Swap"}
         </button>
-
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        {quote && (
-          <>
-            <p>You will receive: {quote.token}</p>
-            <button onClick={executeSwap} disabled={loading}>
-              {loading ? "Processing..." : "Confirm Swap"}
-            </button>
-          </>
-        )}
       </S.Box>
     </S.Container>
   );
