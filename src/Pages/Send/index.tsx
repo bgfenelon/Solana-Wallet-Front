@@ -10,13 +10,29 @@ export default function SendPage() {
   const [loading, setLoading] = useState(false);
 
   async function handleSend() {
-    if (!session?.walletSecret || !session?.walletAddress) {
-      alert("Your wallet is not loaded. Re-import your wallet.");
+    const secret = session?.secretKey;
+    const pubkey = session?.walletAddress;
+
+    if (!secret || !pubkey) {
+      alert("Wallet not loaded.");
       return;
     }
 
-    if (!to || !amount) {
-      alert("Please fill all fields");
+    if (!to) {
+      alert("Invalid recipient address.");
+      return;
+    }
+
+    if (!amount) {
+      alert("Enter an amount.");
+      return;
+    }
+
+    // permite o usuário digitar "0,1"
+    const normalizedAmount = Number(amount.replace(",", "."));
+
+    if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
+      alert("Invalid amount format.");
       return;
     }
 
@@ -24,20 +40,18 @@ export default function SendPage() {
 
     try {
       const res = await postJSON("/wallet/send", {
-        userSecret: session.walletSecret,     // obrigatório
-        userPubkey: session.walletAddress,    // obrigatório!
-        recipient: to,                        // destino
-        amount: Number(amount),               // valor
+        secretKey: secret,       // ✔ backend usa este
+        recipient: to.trim(),    // ✔ wallet destino
+        amount: normalizedAmount // ✔ sempre número válido
       });
 
-      if (res.error) {
+      if (res?.error) {
         alert("Error: " + res.error);
-        setLoading(false);
-        return;
+      } else {
+        alert("Sent! Signature: " + res.signature);
       }
-
-      alert("Sent! Signature: " + res.signature);
     } catch (err: any) {
+      console.error("SEND ERROR:", err);
       alert("Error sending: " + err.message);
     }
 

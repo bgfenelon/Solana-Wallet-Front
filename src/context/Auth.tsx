@@ -1,53 +1,74 @@
-// server/routes/auth.js
-const express = require("express");
-const router = express.Router();
-const bs58 = require("bs58");
-const { Keypair, PublicKey } = require("@solana/web3.js");
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { getJSON } from "../services/api";
 
-// ======================================================
-// IMPORT WALLET (PRIVATE KEY EM ARRAY DE 64 BYTES)
-// ======================================================
-router.post("/import", async (req, res) => {
-  try {
-    const { input, name } = req.body;
+type SessionData = {
+  walletAddress: string | null;
+  secretKey: number[] | null;
+};
 
-    if (!input) {
-      return res.status(400).json({ ok: false, error: "NO_INPUT" });
-    }
+type AuthType = {
+  session: SessionData | null;
+  loading: boolean;
+  saveWallet: (data: SessionData) => void;
+  logout: () => void;
+};
 
-    // Conversão do secretKey vindo do frontend
-    let arr;
-    try {
-      arr = JSON.parse(input); // recebe string JSON do frontend
-    } catch {
-      return res.status(400).json({ ok: false, error: "BAD_SECRET_KEY" });
-    }
-
-    if (!Array.isArray(arr) || arr.length !== 64) {
-      return res.status(400).json({ ok: false, error: "INVALID_SECRET_KEY" });
-    }
-
-    // Criar keypair
-    const secretKey = Uint8Array.from(arr);
-    const keypair = Keypair.fromSecretKey(secretKey);
-
-    // SALVAR NA SESSÃO
-    req.session.sessionObject = {
-      walletPubkey: keypair.publicKey.toBase58(),
-      secretKey: arr, // array puro, o frontend precisa disso
-      name: name || null,
-    };
-
-    req.session.save(() => {
-      return res.json({
-        ok: true,
-        walletPubkey: keypair.publicKey.toBase58(),
-      });
-    });
-  } catch (e) {
-    console.error("IMPORT ERROR:", e);
-    return res.status(500).json({ ok: false, error: "INTERNAL_IMPORT_ERROR" });
-  }
+const AuthContext = createContext<AuthType>({
+  session: null,
+  loading: true,
+  saveWallet: () => {},
+  logout: () => {},
 });
 
-module.exports = router;
+export function AuthProvider({ children }: any) {
+  const [session, setSession] = useState<SessionData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      // 1️⃣ Carrega do localStorage
+      const saved = localStorage.getItem("walletSession");
+      if (saved) {
+        try {
+          const parsed: SessionData = JSON.parse(saved);
+          setSession(parsed);
+        } catch {}
+      }
+
+      // 2️⃣ (opcional) tente pegar do servidor
+      try {
+        const res = await getJSON("/session/me");
+        if (res.ok && res.user) {
+          setSession({
+            walletAddress: res.user.walletPubkey,
+            secretKey: res.user.secretKey,
+          });
+        }
+      } catch {}
+
+      setLoading(false);
+    }
+
+    load();
+  }, []);
+
+  function saveWallet(data: SessionData) {
+    setSession(data);
+    localStorage.setItem("walletSession", JSON.stringify(data));
+  }
+
+  function logout() {
+    setSession(null);
+    localStorage.removeItem("walletSession");
+  }
+
+  return (
+    <AuthContext.Provider value={{ session, loading, saveWallet, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}

@@ -1,12 +1,11 @@
 /* ===========================================================
     CONFIG
 =========================================================== */
-
 const API_BASE =
   import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
 
 /* ===========================================================
-    SAFE PARSE
+    SAFE FETCH
 =========================================================== */
 async function safeParse(res: Response) {
   const txt = await res.text().catch(() => "");
@@ -18,33 +17,20 @@ async function safeParse(res: Response) {
 }
 
 /* ===========================================================
-    GET
+    GET / POST HELPERS
 =========================================================== */
-export async function getJSON(path: string, options: RequestInit = {}) {
+
+export async function getJSON(path: string) {
   const res = await fetch(API_BASE + path, {
-    ...options,
     method: "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
   });
 
-  const data = await safeParse(res);
-
-  if (!res.ok) {
-    throw new Error(data.message || `GET ${path} → ${res.status}`);
-  }
-
-  return data;
+  return await safeParse(res);
 }
 
-/* ===========================================================
-    POST  (CORRIGIDO!)
-=========================================================== */
 export async function postJSON(path: string, body: any) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(API_BASE + path, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -53,12 +39,7 @@ export async function postJSON(path: string, body: any) {
     body: JSON.stringify(body),
   });
 
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
+  return await safeParse(res);
 }
 
 /* AUTH */

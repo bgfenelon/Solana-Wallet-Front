@@ -1,87 +1,91 @@
 import React, { useState } from "react";
 import * as S from "./styles";
-import { PrimaryButton } from "../../styles";
-import { importAnyWallet } from "../../utils/walletImport";
-import { postJSON } from "../../services/api";
 import { useAuth } from "../../context/Auth";
+import { postJSON } from "../../services/api";
 
-interface Props {
-  open: boolean;
-  onClose: () => void;
-}
+export default function SendPage() {
+  const { session } = useAuth();
 
-export default function ModalImport({ open, onClose }: Props) {
-  const [input, setInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [to, setTo] = useState("");
+  const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { saveWallet } = useAuth(); // 🔥 usado para salvar a carteira REAL
+  async function handleSend() {
+    console.log("DEBUG SESSION:", session);
 
-  if (!open) return null;
+    if (!session?.secretKey || !session?.walletAddress) {
+      alert("Wallet not loaded.");
+      return;
+    }
 
-  async function handleImport() {
-    setError(null);
+    if (!to || to.length < 20) {
+      alert("Invalid recipient address.");
+      return;
+    }
+
+    if (!amount) {
+      alert("Enter an amount.");
+      return;
+    }
+
+    // Aceita "0,1" ou "0.1"
+    const normalizedAmount = Number(amount.replace(",", "."));
+    if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
+      alert("Invalid amount.");
+      return;
+    }
+
+    const payload = {
+      secretKey: session.secretKey,
+      recipient: to.trim(),
+      amount: normalizedAmount,
+    };
+
+    console.log("DEBUG SEND PAYLOAD:", payload);
+
     setLoading(true);
 
     try {
-      // 1️⃣ Validar chave/seed offline e obter keypair real
-      const wallet = importAnyWallet(input);
+      const res = await postJSON("/wallet/send", payload);
 
-      const realPubkey = wallet.publicKey;
-      const realSecretKey: string | number[] = wallet.privateKey; // array de 64 números
+      console.log("DEBUG SEND RESPONSE:", res);
 
-      if (!realPubkey || realPubkey.length < 30) {
-        throw new Error("Chave pública inválida gerada.");
+      if (res.error) {
+        alert("Error: " + res.error);
+        setLoading(false);
+        return;
       }
 
-      // 2️⃣ Chamar opcionalmente o backend (verificação, registro, etc.)
-      await postJSON("/auth/import", {
-        input: realSecretKey,
-      });
-
-      // 3️⃣ SALVAR NO AUTH CONTEXT (forma correta)
-      saveWallet({
-        walletAddress: realPubkey,
-        // @ts-ignore
-        secretKey: realSecretKey,
-      });
-
-      // 4️⃣ Fechar modal e redirecionar
-      onClose();
-      window.location.href = "/wallet";
-
+      alert("Transaction sent!\nSignature: " + res.signature);
     } catch (err: any) {
-      console.error(err);
-      setError(err?.message || "Falha ao importar carteira.");
-    } finally {
-      setLoading(false);
+      console.error("SEND ERROR:", err);
+      alert("Failed to send transaction.");
     }
+
+    setLoading(false);
   }
 
   return (
-    <S.Overlay onClick={onClose}>
-      <S.ModalContainer onClick={(e) => e.stopPropagation()}>
-        <h2>Import Wallet (Solana)</h2>
+    <S.PageContainer>
+      <S.Box>
+        <h1>Send SOL</h1>
 
-        <S.Label>Private Key / Seed Phrase</S.Label>
-        <S.TextArea
-          placeholder="Paste your seed phrase or private key"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+        <input
+          placeholder="Recipient wallet"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
         />
 
-        {error && <S.ErrorMsg>{error}</S.ErrorMsg>}
+        <input
+          placeholder="Amount in SOL"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
 
-        <S.Actions>
-          <S.SecondaryButton onClick={onClose} disabled={loading}>
-            Cancel
-          </S.SecondaryButton>
-
-          <PrimaryButton onClick={handleImport} disabled={loading}>
-            {loading ? "Importing..." : "Import →"}
-          </PrimaryButton>
-        </S.Actions>
-      </S.ModalContainer>
-    </S.Overlay>
+        <button disabled={loading} onClick={handleSend}>
+          {loading ? "Sending..." : "Send"}
+        </button>
+      </S.Box>
+    </S.PageContainer>
   );
 }
