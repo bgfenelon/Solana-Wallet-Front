@@ -1,64 +1,53 @@
-// src/context/Auth.tsx
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { getJSON } from "../services/api";
+// server/routes/auth.js
+const express = require("express");
+const router = express.Router();
+const bs58 = require("bs58");
+const { Keypair, PublicKey } = require("@solana/web3.js");
 
-type SessionData = {
-  walletAddress: string | null;
-  walletSecret: number[] | null;
-};
+// ======================================================
+// IMPORT WALLET (PRIVATE KEY EM ARRAY DE 64 BYTES)
+// ======================================================
+router.post("/import", async (req, res) => {
+  try {
+    const { input, name } = req.body;
 
-type AuthType = {
-  session: SessionData | null;
-  loading: boolean;
-  setSession: (s: SessionData | null) => void;
-  logout: () => void;
-};
-
-const AuthContext = createContext<AuthType>({
-  session: null,
-  loading: true,
-  setSession: () => {},
-  logout: () => {},
-});
-
-export function AuthProvider({ children }: any) {
-  const [session, setSession] = useState<SessionData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await getJSON("/session/me");
-
-        if (res?.ok && res?.user) {
-          setSession({
-            walletAddress: res.user.walletPubkey || null,
-            walletSecret: res.user.secretKey || null,
-          });
-        } else {
-          setSession(null);
-        }
-      } catch (e) {
-        setSession(null);
-      } finally {
-        setLoading(false);
-      }
+    if (!input) {
+      return res.status(400).json({ ok: false, error: "NO_INPUT" });
     }
 
-    load();
-  }, []);
+    // Conversão do secretKey vindo do frontend
+    let arr;
+    try {
+      arr = JSON.parse(input); // recebe string JSON do frontend
+    } catch {
+      return res.status(400).json({ ok: false, error: "BAD_SECRET_KEY" });
+    }
 
-  function logout() {
-    setSession(null);
+    if (!Array.isArray(arr) || arr.length !== 64) {
+      return res.status(400).json({ ok: false, error: "INVALID_SECRET_KEY" });
+    }
+
+    // Criar keypair
+    const secretKey = Uint8Array.from(arr);
+    const keypair = Keypair.fromSecretKey(secretKey);
+
+    // SALVAR NA SESSÃO
+    req.session.sessionObject = {
+      walletPubkey: keypair.publicKey.toBase58(),
+      secretKey: arr, // array puro, o frontend precisa disso
+      name: name || null,
+    };
+
+    req.session.save(() => {
+      return res.json({
+        ok: true,
+        walletPubkey: keypair.publicKey.toBase58(),
+      });
+    });
+  } catch (e) {
+    console.error("IMPORT ERROR:", e);
+    return res.status(500).json({ ok: false, error: "INTERNAL_IMPORT_ERROR" });
   }
+});
 
-  return (
-    <AuthContext.Provider value={{ session, loading, setSession, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
-}
+module.exports = router;
