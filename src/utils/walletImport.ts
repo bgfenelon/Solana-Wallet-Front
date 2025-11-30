@@ -25,7 +25,7 @@ export function importAnyWallet(input: string): WalletImportResult {
         publicKey: keypair.publicKey.toBase58(),
         privateKey: JSON.stringify(Array.from(keypair.secretKey)),
       };
-    } catch {}
+    } catch { }
   }
 
   try {
