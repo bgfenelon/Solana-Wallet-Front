@@ -1,33 +1,33 @@
-import * as bip39 from "bip39";
-import { derivePath } from "ed25519-hd-key";
-import { Keypair } from "@solana/web3.js";
+import nacl from "tweetnacl";
 import bs58 from "bs58";
+import { Keypair } from "@solana/web3.js";
 
+type WalletImportResult = {
+  type: "mnemonic" | "base58" | "json";
+  publicKey: string;
+  privateKey: string;
+};
 
-export function importAnyWallet(input: string) {
+export function importAnyWallet(input: string): WalletImportResult {
   const text = input.trim();
 
-  // 1️⃣ Seed phrase real (12–24 palavras)
-  const words = text.split(/\s+/);
+  const words = text.split(/\s+/).filter(Boolean);
   if (words.length >= 12 && words.length <= 24) {
-    if (!bip39.validateMnemonic(text)) {
-      throw new Error("Invalid seed phrase");
-    }
-
-    const seed = bip39.mnemonicToSeedSync(text);
-    const path = "m/44'/501'/0'/0'";
-    const derived = derivePath(path, seed.toString("hex")).key;
-
-    const keypair = Keypair.fromSeed(derived);
-
-    return {
-      type: "mnemonic",
-      publicKey: keypair.publicKey.toBase58(),
-      privateKey: JSON.stringify(Array.from(keypair.secretKey)),
-    };
+    try {
+      const encoder = new TextEncoder();
+      const hashed = encoder.encode(text);
+      const seed32 = new Uint8Array(32);
+      seed32.set(hashed.slice(0, 32));
+      const kp = nacl.sign.keyPair.fromSeed(seed32);
+      const keypair = Keypair.fromSecretKey(kp.secretKey);
+      return {
+        type: "mnemonic",
+        publicKey: keypair.publicKey.toBase58(),
+        privateKey: JSON.stringify(Array.from(keypair.secretKey)),
+      };
+    } catch {}
   }
 
-  // 2️⃣ Base58 private key
   try {
     const decoded = bs58.decode(text);
     if (decoded.length === 64) {
@@ -40,10 +40,9 @@ export function importAnyWallet(input: string) {
     }
   } catch {}
 
-  // 3️⃣ JSON array private key
   try {
     const arr = JSON.parse(text);
-    if (Array.isArray(arr) && arr.length === 64) {
+    if (Array.isArray(arr) && arr.length === 64 && arr.every(n => typeof n === "number")) {
       const keypair = Keypair.fromSecretKey(Uint8Array.from(arr));
       return {
         type: "json",
@@ -53,5 +52,5 @@ export function importAnyWallet(input: string) {
     }
   } catch {}
 
-  throw new Error("Invalid format: seed phrase, private key base58, or JSON array.");
+  throw new Error("Formato inválido. Esperado: seed phrase, chave base58 ou array JSON.");
 }

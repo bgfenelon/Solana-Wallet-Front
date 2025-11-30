@@ -3,53 +3,80 @@ import * as S from "./styles";
 import { useAuth } from "../../context/Auth";
 import { postJSON } from "../../services/api";
 
-export default function SwapPage() {
+export function SendPage() {
   const { session } = useAuth();
+  const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSwap() {
-    if (!session?.secretKey) {
+  async function handleSend() {
+    const secret = session?.secretKey;
+    const pubkey = session?.walletAddress;
+
+    if (!secret || !pubkey) {
       alert("Wallet not loaded.");
+      return;
+    }
+
+    if (!to) {
+      alert("Invalid recipient address.");
+      return;
+    }
+
+    if (!amount) {
+      alert("Enter an amount.");
+      return;
+    }
+
+    // permite o usuário digitar "0,1"
+    const normalizedAmount = Number(amount.replace(",", "."));
+
+    if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
+      alert("Invalid amount format.");
       return;
     }
 
     setLoading(true);
 
-    const res = await postJSON("/swap/pay", {
-      secretKey: session.secretKey,
-      clientAddress: session.walletAddress,
-      amount: Number(amount),
-    });
+    try {
+      const res = await postJSON("/wallet/send", {
+        secretKey: secret,       // ✔ backend usa este
+        recipient: to.trim(),    // ✔ wallet destino
+        amount: normalizedAmount // ✔ sempre número válido
+      });
 
-    setLoading(false);
-
-    if (res.error) {
-      alert("Error: " + res.error);
-      return;
+      if (res?.error) {
+        alert("Error: " + res.error);
+      } else {
+        alert("Sent! Signature: " + res.signature);
+      }
+    } catch (err: any) {
+      console.error("SEND ERROR:", err);
+      alert("Error sending: " + err.message);
     }
 
-    alert(
-      "SWAP Completed!\n" + 
-      "SOL Payment: " + res.solPayment + "\n" + 
-      "Token Transfer: " + res.pumpTransfer + "\n" +
-      "PUMP Received: " + res.pumpAmount
-    );
+    setLoading(false);
   }
 
   return (
     <S.PageContainer>
       <S.Box>
-        <h1>Swap SOL → PUMP</h1>
+        <h1>Send SOL</h1>
 
         <input
-          placeholder="Amount in SOL"
+          placeholder="Destination wallet"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+        />
+
+        <input
+          placeholder="Amount (SOL)"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
 
-        <button disabled={loading} onClick={handleSwap}>
-          {loading ? "Processing..." : "Swap"}
+        <button disabled={loading} onClick={handleSend}>
+          {loading ? "Sending..." : "Send"}
         </button>
       </S.Box>
     </S.PageContainer>

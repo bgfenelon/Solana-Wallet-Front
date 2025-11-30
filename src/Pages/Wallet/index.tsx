@@ -17,6 +17,8 @@ export default function WalletPage() {
   const { session } = useAuth();
   const walletAddress = session?.walletAddress ?? null;
 
+  const [check, setCheck] = useState(false);
+
   // BALANCE
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
@@ -181,6 +183,16 @@ export default function WalletPage() {
               <span className="currency"> SOL</span>
             </S.BalanceValue>
           </S.BalanceCard>
+          
+
+            <S.SwapButton onClick={()=> setCheck(true)}>
+              <S.ActionIcon className="grid-one">
+
+                <ArrowRightLeft  />
+              </S.ActionIcon >
+              <div className="title">{check ? 'Coming Soon ' : ''}Swap</div>
+              <div className="subtitle">Exchange for VEIL</div>
+            </S.SwapButton>
 
           {/* ==============================
                         BUTTONS
@@ -204,13 +216,7 @@ export default function WalletPage() {
             </S.ActionButton>
 
             
-            <S.ActionButton to="/swap">
-              <S.ActionIcon className="purple">
-                <ArrowRightLeft />
-              </S.ActionIcon>
-              <div className="title">Swap</div>
-              <div className="subtitle">Exchange for VEIL</div>
-            </S.ActionButton>
+
             
           </S.ActionGrid>
 

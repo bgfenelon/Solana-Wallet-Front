@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ModalCreate from "../ModalCreate";
-import  ModalImport  from "../ModalImport";
+import ModalImport from "../ModalImport";
 import { PrimaryButton } from "../../styles";
 import * as S from "./styles";
 import { CheckCircle2 } from "lucide-react";
@@ -11,11 +11,16 @@ export function Hero() {
 
   return (
     <>
-      {/* Modais */}
-      <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
-      <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
+      {/* Renderização condicional dos modais */}
+      {openCreate && (
+        <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
+      )}
 
-      <S.MainHeroContent >
+      {openImport && (
+        <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
+      )}
+
+      <S.MainHeroContent>
         <S.BackgroundGrid>
           <div />
         </S.BackgroundGrid>
@@ -39,9 +44,9 @@ export function Hero() {
           </S.Subheading>
 
           <S.Buttons>
-             <PrimaryButton onClick={() => setOpenCreate(true)}>
+            <PrimaryButton onClick={() => setOpenCreate(true)}>
               Create Wallet →
-            </PrimaryButton> 
+            </PrimaryButton>
 
             <S.SecondaryButton onClick={() => setOpenImport(true)}>
               Import Wallet

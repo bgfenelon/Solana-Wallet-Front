@@ -226,7 +226,7 @@ export const CTA = styled.div`
   }
 `;
 
-export const BtnContainer = styled.button`
+export const BtnContainer = styled.div`
 display: flex;
 align-items: center;
 justify-content: center;

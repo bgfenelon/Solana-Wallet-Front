@@ -53,8 +53,7 @@ export function PrivacyFeatures() {
   return (
     <S.Section id="privacy">
 
-      <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
-      <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
+
       <S.Container>
         <S.Header>
           <h2>Built for Privacy</h2>
@@ -82,7 +81,7 @@ export function PrivacyFeatures() {
           <p>Join the future of private finance on Solana. Create your wallet in seconds and experience true financial privacy.</p>
 
           <S.BtnContainer>
-            <PrimaryButton onClick={() => setOpenCreate(true)}>
+            <PrimaryButton onClick={() => setOpenCreate(false)}>
               Create Wallet Now 
             </PrimaryButton>
             <S.LinkStyle to="/docs">

@@ -149,6 +149,13 @@ export const PasswordVisibity = styled.button`
   outline: none;
   border: none;
 `;
+export const SwapButton = styled.button`
+background: rgba(255, 255, 255, 0.05);
+width: 100%;
+padding: 40px ;
+    border-radius: 18px;
+        border: 1px solid rgba(157, 78, 221, 0.35);
+`
 
 /* ------------------------------- */
 /* ACTION GRID */
@@ -185,6 +192,9 @@ export const ActionButton = styled(Link)`
   width: 100%;
   padding: 30px 0;
 
+  &.grid-one{
+  }
+
   &:hover {
     background: rgba(157, 78, 221, 0.18);
     transform: scale(0.97);
@@ -217,6 +227,12 @@ export const ActionIcon = styled.div`
   align-items: center;
 
   font-size: 26px;
+
+  &.grid-one{
+    background: rgba(157, 78, 221, 0.25);
+        border: 1px solid rgba(157, 78, 221, 0.5);
+            margin-bottom: 12px;
+  }
 
   &.purple {
     background: rgba(157, 78, 221, 0.25);
