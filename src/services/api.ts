@@ -2,7 +2,8 @@
     CONFIG
 =========================================================== */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
+const API_BASE =
+  import.meta.env.VITE_API_URL ?? "https://node-veilfi-jtae.onrender.com";
 
 /* ===========================================================
     SAFE PARSE
@@ -40,12 +41,12 @@ export async function getJSON(path: string, options: RequestInit = {}) {
 }
 
 /* ===========================================================
-    POST
+    POST  (CORRIGIDO!)
 =========================================================== */
 export async function postJSON(path: string, body: any) {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    credentials: "include",           // 🔥 OBRIGATÓRIO PARA MANTER SESSÃO
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -60,38 +61,30 @@ export async function postJSON(path: string, body: any) {
   }
 }
 
-
-/* ===========================================================
-    AUTH
-=========================================================== */
+/* AUTH */
 export function importWallet(input: string) {
   return postJSON("/auth/import", { input });
 }
 
-/* ===========================================================
-    SESSION
-=========================================================== */
+/* SESSION */
 export function getSession() {
   return getJSON("/session/me");
 }
 
-/* ===========================================================
-    BALANCE  (ROTA CORRETA DA SUA API)
-=========================================================== */
+/* BALANCE */
 export function postUserBalance(userPubkey: string) {
   return postJSON("/user/balance", { userPubkey });
 }
 
-/* ===========================================================
-    SWAP / BUY
-=========================================================== */
-
-// Criar ordem de compra
+/* SWAP */
 export function createOrder(usdAmount: number, buyer: string) {
   return postJSON("/swap/buy/init", { usdAmount, buyer });
 }
 
-// Confirmar ordem (ASSINATURA DO PAGAMENTO)
 export function confirmOrder(orderId: string, paymentSignature: string, buyer: string) {
-  return postJSON("/swap/buy/confirm", { orderId, paymentSignature, buyer });
+  return postJSON("/swap/buy/confirm", {
+    orderId,
+    paymentSignature,
+    buyer,
+  });
 }

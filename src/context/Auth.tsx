@@ -1,79 +1,77 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type WalletSession = {
+type SessionData = {
   walletAddress: string | null;
-  secretKey?: number[];
+  walletSecret: number[] | null;
 };
 
 type AuthContextType = {
-  session: WalletSession | null;
-  saveWallet: (data: WalletSession) => void;
-  logout: () => void;
+  session: SessionData | null;
   loading: boolean;
+  setSession: (data: SessionData | null) => void;
+  logout: () => void;
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType>({
+  session: null,
+  loading: true,
+  setSession: () => {},
+  logout: () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<WalletSession | null>(null);
+  const [session, setSessionState] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /* ===========================================================
+      SALVAR SESSÃO NO LOCALSTORAGE
+  ============================================================ */
+  function setSession(data: SessionData | null) {
+    setSessionState(data);
+
+    if (data) {
+      localStorage.setItem("veilfi_session", JSON.stringify(data));
+    } else {
+      localStorage.removeItem("veilfi_session");
+    }
+  }
+
+  /* ===========================================================
+      LOGOUT
+  ============================================================ */
+  function logout() {
+    setSession(null);
+  }
+
+  /* ===========================================================
+      RESTAURAR SESSÃO AO INICIAR A PÁGINA
+  ============================================================ */
   useEffect(() => {
-    const saved = localStorage.getItem("wallet");
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem("veilfi_session");
+
+      if (saved) {
         const parsed = JSON.parse(saved);
 
-        // 🔥 Garantir que o endereço salvo é válido
-        if (parsed.walletAddress && parsed.walletAddress.length >= 30) {
-          setSession(parsed);
-        } else {
-          console.warn("⚠️ Wallet inválida encontrada no localStorage. Limpando...");
-          localStorage.removeItem("wallet");
-        }
-      } catch (err) {
-        console.error("Erro ao carregar wallet", err);
+        setSessionState({
+          walletAddress: parsed.walletAddress || null,
+          walletSecret: parsed.walletSecret || null,
+        });
       }
+    } catch (err) {
+      console.error("Failed to restore saved session", err);
     }
 
     setLoading(false);
   }, []);
 
-function saveWallet(data: WalletSession) {
-  if (!data.walletAddress || data.walletAddress.length < 30) {
-    console.error("❌ saveWallet recebeu um endereço inválido:", data.walletAddress);
-    return; // <-- impede corromper a sessão
-  }
-
-  localStorage.setItem("wallet", JSON.stringify(data));
-  setSession(data);
-}
-
-
-  function logout() {
-    localStorage.removeItem("wallet");
-    setSession(null);
-  }
-
   return (
-    <AuthContext.Provider value={{ session, saveWallet, logout, loading }}>
+    <AuthContext.Provider value={{ session, loading, setSession, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-
-  if (!ctx) {
-    console.warn("⚠ useAuth usado fora do AuthProvider");
-    return {
-      session: null,
-      saveWallet: () => {},
-      logout: () => {},
-      loading: true,
-    };
-  }
-
-  return ctx;
+  return useContext(AuthContext);
 }
