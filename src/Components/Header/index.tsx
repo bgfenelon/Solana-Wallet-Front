@@ -93,3 +93,4 @@ export function Header() {
     </S.MainContainer>
   );
 }
+export default Header
