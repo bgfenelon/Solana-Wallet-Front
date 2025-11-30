@@ -42,26 +42,24 @@ export async function getJSON(path: string, options: RequestInit = {}) {
 /* ===========================================================
     POST
 =========================================================== */
-export async function postJSON(path: string, body: any, options: RequestInit = {}) {
-  const res = await fetch(API_BASE + path, {
-    ...options,
+export async function postJSON(path: string, body: any) {
+  const res = await fetch(`${API}${path}`, {
     method: "POST",
-    credentials: "include",
+    credentials: "include",           // 🔥 OBRIGATÓRIO PARA MANTER SESSÃO
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers || {}),
     },
     body: JSON.stringify(body),
   });
 
-  const data = await safeParse(res);
-
-  if (!res.ok) {
-    throw new Error(data.message || `POST ${path} → ${res.status}`);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
   }
-
-  return data;
 }
+
 
 /* ===========================================================
     AUTH
