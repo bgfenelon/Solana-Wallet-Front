@@ -24,7 +24,6 @@ function isValidPubKey(pk: any): boolean {
 
     const clean = pk.trim();
 
-    // Solana public keys always between 32–44 chars
     if (clean.length < 32 || clean.length > 50) return false;
 
     new PublicKey(clean);
@@ -40,21 +39,17 @@ export default function WalletPage() {
 
   const [check, setCheck] = useState(false);
 
-  // SALDOS
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
-  const [usdtBalance, setUsdtBalance] = useState(0);
+  const [usdtBalance, setUsdtBalance] = useState(0); // agora USDC
   const [veilBalance, setVeilBalance] = useState(0);
 
-  // VISIBILIDADE
   const [visible, setVisible] = useState(true);
 
-  // HISTÓRICO
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // RPC
   const connection = new Connection(
     "https://mainnet.helius-rpc.com/?api-key=1581ae46-832d-4d46-bc0c-007c6269d2d9"
   );
@@ -86,24 +81,25 @@ export default function WalletPage() {
   }, [walletAddress]);
 
   /* =====================================================
-       2 — USDT BALANCE
+       2 — USDC BALANCE
      ===================================================== */
   useEffect(() => {
-    async function loadUSDT() {
+    async function loadUSDC() {
       try {
         if (!isValidPubKey(walletAddress)) {
           setUsdtBalance(0);
           return;
         }
 
-        const USDT_MINT = new PublicKey(
-          "Es9vMFrzaCERyN2rj8qJea2orGZf4d2Lr8DQJHuhJZ"
+        // ★ USDC MINT ADDRESS
+        const USDC_MINT = new PublicKey(
+          "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         );
 
         const tokenAccounts =
           await connection.getParsedTokenAccountsByOwner(
             new PublicKey(walletAddress.trim()),
-            { mint: USDT_MINT }
+            { mint: USDC_MINT }
           );
 
         if (tokenAccounts.value.length === 0) {
@@ -116,11 +112,11 @@ export default function WalletPage() {
 
         setUsdtBalance(uiAmount || 0);
       } catch (err) {
-        console.error("Erro carregando saldo USDT:", err);
+        console.error("Erro carregando saldo USDC:", err);
       }
     }
 
-    loadUSDT();
+    loadUSDC();
   }, [walletAddress]);
 
   /* =====================================================
@@ -189,7 +185,6 @@ export default function WalletPage() {
 
           const pre = tx.meta.preBalances;
           const post = tx.meta.postBalances;
-
           const keys = tx.transaction.message.getAccountKeys();
           const allKeys = keys.staticAccountKeys;
 
@@ -256,9 +251,7 @@ export default function WalletPage() {
                   <div className="subtitle">
                     Linked Account:{" "}
                     {walletAddress
-                      ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(
-                          -4
-                        )}`
+                      ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
                       : "No wallet connected"}
                   </div>
                 </div>
@@ -282,13 +275,13 @@ export default function WalletPage() {
 
             {/* MINI TOKEN BOX */}
             <S.TokenMiniRow>
-              {/* USDT */}
+              {/* USDC */}
               <div className="tokenBox">
                 <img
-                  src="https://cryptologos.cc/logos/tether-usdt-logo.png"
-                  alt="usdt"
+                  src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+                  alt="usdc"
                 />
-                <span>{usdtBalance.toFixed(2)} USDT</span>
+                <span>{usdtBalance.toFixed(2)} USDC</span>
               </div>
 
               {/* VEIL */}
@@ -301,22 +294,28 @@ export default function WalletPage() {
               </div>
             </S.TokenMiniRow>
           </S.BalanceCard>
-<S.ActionGrid>
-          <S.SwapButton onClick={() => navigate("/swap")}>
-            <S.ActionIcon className="grid-one">
-              <ArrowRightLeft />
-            </S.ActionIcon>
-            <div className="title">{check ? "Coming Soon " : ""}Swap</div>
-            <div className="subtitle">Exchange for SOL OR USDT</div>
-          </S.SwapButton>
-                    <S.SwapButton onClick={() => navigate("/wallet")}>
-            <S.ActionIcon className="grid-one">
-              <ArrowRightLeft />
-            </S.ActionIcon>
-            <div className="title">{check ? "Coming Soon " : ""}Coming soon: Swap For Veil</div>
-            <div className="subtitle">Exchange for VEIL</div>
-          </S.SwapButton>
-</S.ActionGrid>
+
+          {/* SWAP SECTION */}
+          <S.ActionGrid>
+            <S.SwapButton onClick={() => navigate("/swap")}>
+              <S.ActionIcon className="grid-one">
+                <ArrowRightLeft />
+              </S.ActionIcon>
+              <div className="title">{check ? "Coming Soon " : ""}Swap</div>
+              <div className="subtitle">Exchange for SOL OR USDC</div>
+            </S.SwapButton>
+
+            <S.SwapButton onClick={() => navigate("/wallet")}>
+              <S.ActionIcon className="grid-one">
+                <ArrowRightLeft />
+              </S.ActionIcon>
+              <div className="title">
+                {check ? "Coming Soon " : ""}Coming soon: Swap For Veil
+              </div>
+              <div className="subtitle">Exchange for VEIL</div>
+            </S.SwapButton>
+          </S.ActionGrid>
+
           {/* BUTTONS */}
           <S.ActionGrid>
             <S.ActionButton to="/deposit">
@@ -343,7 +342,9 @@ export default function WalletPage() {
                 <h3 style={{ fontSize: "1.2rem", marginBottom: "12px" }}>
                   Latest Transactions
                 </h3>
-                <S.SeeMore to={"/paymentHistory"}>See more {" ->"}</S.SeeMore>
+                <S.SeeMore to={"/paymentHistory"}>
+                  See more {" ->"}
+                </S.SeeMore>
               </S.PaymentHeader>
 
               {loadingHistory && <p>Loading...</p>}
