@@ -20,7 +20,7 @@ import Header from "../../Components/Header"
 export default function CoreConcepts() {
   return (
     <>
-    <Header buttons='false'/>
+    <Header button={false}/>
       <Section>
     <Space />
 
