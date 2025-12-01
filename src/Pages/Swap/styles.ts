@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+
+
 export const Container = styled.div`
   width: 100%;
   padding: 40px;
@@ -18,13 +20,13 @@ export const Box = styled.div`
   flex-direction: column;
   gap: 20px;
 
-  input {
+  input, select, option {
     padding: 14px;
     border-radius: 10px;
     border: none;
     outline: none;
-    width: 100%;
-    background: rgba(255,255,255,0.08);
+    width: 10=0%;
+    background: rgba(255,255,255,0.08) ;
     color: white;
   }
 
@@ -43,6 +45,16 @@ export const Box = styled.div`
     text-align: center;
   }
 `;
+
+export const Option = styled.option`
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    width: 100%;
+    background: rgba(255,255,255,0.08) ;
+    color: black;
+`
 
 export const ToggleButton = styled.button`
   padding: 10px;

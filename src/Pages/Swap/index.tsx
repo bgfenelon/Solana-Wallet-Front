@@ -17,8 +17,8 @@ export default function SwapPage() {
   ========================================================= */
   function validateSession() {
     console.log("=== DEBUG SESSION ===");
-    console.log("walletAddress:", session?.walletAddress);
-    console.log("secretKey:", session?.secretKey);
+    // console.log("walletAddress:", session?.walletAddress);
+    // console.log("secretKey:", session?.secretKey);
 
     if (!session?.walletAddress || session.walletAddress.length < 30) {
       alert("Wallet inválida. Reimporte sua carteira.");
@@ -89,8 +89,8 @@ export default function SwapPage() {
               setDirection(e.target.value as "SOL_TO_USDT" | "USDT_TO_SOL")
             }
           >
-            <option value="SOL_TO_USDT">SOL ➝ USDT</option>
-            <option value="USDT_TO_SOL">USDT ➝ SOL</option>
+            <S.Option value="SOL_TO_USDT">SOL ➝ USDT</S.Option>
+            <S.Option value="USDT_TO_SOL">USDT ➝ SOL</S.Option>
           </select>
         </div>
 
