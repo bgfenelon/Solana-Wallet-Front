@@ -66,7 +66,7 @@ export function SendPage() {
     <S.PageContainer>
       <S.NavBar>
         <button onClick={() => window.history.back()}>← Back</button>
-        <h2>Deposit</h2>
+        <h2>Send</h2>
         <h2></h2>
       </S.NavBar>
 
