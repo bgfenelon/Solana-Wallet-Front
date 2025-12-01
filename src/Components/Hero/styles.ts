@@ -26,6 +26,8 @@ export const MainHeroContent = styled.section`
     padding-left: 4%;
     padding-right: 4%;
     padding-bottom: 25%;
+    height: 100%;
+    
   }
 
   @media (max-width: 480px) {
@@ -140,54 +142,94 @@ export const MainHeading = styled.h1`
 `;
 
   export const Contract = styled.button`
-  background-color:transparent;
+  background: color-mix(in oklab, var(--primary) 50%, transparent);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  margin: auto;
-  margin-bottom: 20px;
-  padding: 7px 15px;
-  border-radius: 15px;
-  background-color:  color-mix(in oklab, var(--primary) 50%, transparent);
-  transition: all .5s;
+  gap: 8px;
 
-  &:hover{
-    transform: scale(1.1);
+  margin: 0 auto 25px auto;
+  padding: 8px 18px;
+
+  border-radius: 14px;
+  transition: transform .3s;
+
+  h6 {
+    font-size: 0.85rem;
+    color: white;
+    text-align: center;
+    font-weight: 500;
   }
-  `;
 
-  export const ContractContainer = styled.div`
-  width:100%;
-  height: 10px;
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  @media (max-width: 480px) {
+    padding: 6px 14px;
+    margin-bottom: 32px;
+
+    h6 {
+      font-size: 0.78rem;
+    }
+  }
+`;
+
+export const ContractContainer = styled.div`
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap:15px;
-  margin: 20px 0;
+  gap: 18px;
 
-  `
+  margin: 15px 0 10px 0;
 
+  @media (max-width: 768px) {
+    gap: 16px;
+    margin: 20px 0 12px 0;
+  }
 
-  export const ContractLink = styled.a`
-  width:30px;
-  height:30px;
+  @media (max-width: 480px) {
+    gap: 14px;
+    margin: 28px 0 15px 0;
+  }
+`;
+
+export const ContractLink = styled.a`
+  display: flex;
   align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
   cursor: pointer;
-  transition: all .5;
+  transition: transform .25s ease;
 
-  &:hover{
-    scale: (1.3);
+  &:hover {
+    transform: scale(1.15);
   }
 
-  img{
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
     display: block;
-    width: 101%;
-    max-width: 101%;
-    border-radius: 100%;
   }
-  `;
+
+  @media (max-width: 768px) {
+    width: 36px;
+    height: 36px;
+  }
+
+  @media (max-width: 480px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
+
 
 /* Subtítulo */
 export const Subheading = styled.p`
