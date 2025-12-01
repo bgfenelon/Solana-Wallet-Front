@@ -14,23 +14,43 @@ import { PasswordVisibity } from "./styles";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useNavigate } from "react-router-dom";
 
+/* =====================================================
+   VALIDAÇÃO ABSOLUTAMENTE SEGURA DE PUBLICKEY
+   ===================================================== */
+function isValidPubKey(pk: any): boolean {
+  try {
+    if (!pk) return false;
+    if (typeof pk !== "string") return false;
+
+    const clean = pk.trim();
+
+    // Solana public keys always between 32–44 chars
+    if (clean.length < 32 || clean.length > 50) return false;
+
+    new PublicKey(clean);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function WalletPage() {
   const { session } = useAuth();
   const walletAddress = session?.walletAddress ?? null;
 
   const [check, setCheck] = useState(false);
 
-  // BALANCE (SOL)
+  // SALDOS
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
 
-  // USDT BALANCE
   const [usdtBalance, setUsdtBalance] = useState(0);
+  const [veilBalance, setVeilBalance] = useState(0);
 
-  // VISIBILITY
+  // VISIBILIDADE
   const [visible, setVisible] = useState(true);
 
-  // HISTORY
+  // HISTÓRICO
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
@@ -38,22 +58,22 @@ export default function WalletPage() {
   const connection = new Connection(
     "https://mainnet.helius-rpc.com/?api-key=1581ae46-832d-4d46-bc0c-007c6269d2d9"
   );
+
   const navigate = useNavigate();
 
-  /* ============================
-        1 — FETCH BALANCE API
-     ============================ */
+  /* =====================================================
+       1 — FETCH SOL BALANCE
+     ===================================================== */
   useEffect(() => {
     async function fetchBalance() {
       try {
-        if (!walletAddress || walletAddress.length < 20) {
+        if (!isValidPubKey(walletAddress)) {
+          setBalance(0);
           setLoadingBalance(false);
           return;
         }
 
-        const cleanAddress = walletAddress.trim();
-        const res = await postUserBalance(cleanAddress);
-
+        const res = await postUserBalance(walletAddress.trim());
         setBalance(res.balance);
       } catch (err) {
         console.error("Error fetching balance:", err);
@@ -65,13 +85,16 @@ export default function WalletPage() {
     fetchBalance();
   }, [walletAddress]);
 
-  /* ============================
-        1.1 — FETCH USDT BALANCE
-     ============================ */
+  /* =====================================================
+       2 — USDT BALANCE
+     ===================================================== */
   useEffect(() => {
     async function loadUSDT() {
       try {
-        if (!walletAddress) return;
+        if (!isValidPubKey(walletAddress)) {
+          setUsdtBalance(0);
+          return;
+        }
 
         const USDT_MINT = new PublicKey(
           "Es9vMFrzaCERyN2rj8qJea2orGZf4d2Lr8DQJHuhJZ"
@@ -79,7 +102,7 @@ export default function WalletPage() {
 
         const tokenAccounts =
           await connection.getParsedTokenAccountsByOwner(
-            new PublicKey(walletAddress),
+            new PublicKey(walletAddress.trim()),
             { mint: USDT_MINT }
           );
 
@@ -100,18 +123,57 @@ export default function WalletPage() {
     loadUSDT();
   }, [walletAddress]);
 
-  /* ============================
-        2 — FETCH HISTORY
-     ============================ */
+  /* =====================================================
+       3 — VEIL BALANCE
+     ===================================================== */
+  useEffect(() => {
+    async function loadVEIL() {
+      try {
+        if (!isValidPubKey(walletAddress)) {
+          setVeilBalance(0);
+          return;
+        }
+
+        const VEIL_MINT = new PublicKey(
+          "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump"
+        );
+
+        const tokenAccounts =
+          await connection.getParsedTokenAccountsByOwner(
+            new PublicKey(walletAddress.trim()),
+            { mint: VEIL_MINT }
+          );
+
+        if (tokenAccounts.value.length === 0) {
+          setVeilBalance(0);
+          return;
+        }
+
+        const uiAmount =
+          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+
+        setVeilBalance(uiAmount || 0);
+      } catch (err) {
+        console.error("Erro carregando saldo VEIL:", err);
+      }
+    }
+
+    loadVEIL();
+  }, [walletAddress]);
+
+  /* =====================================================
+       4 — TRANSACTIONS HISTORY
+     ===================================================== */
   useEffect(() => {
     async function loadTransactions() {
       try {
-        if (!walletAddress || walletAddress.length < 20) {
+        if (!isValidPubKey(walletAddress)) {
+          setHistory([]);
           setLoadingHistory(false);
           return;
         }
 
-        const pubkey = new PublicKey(walletAddress);
+        const pubkey = new PublicKey(walletAddress.trim());
         const signatures = await connection.getSignaturesForAddress(pubkey, {
           limit: 10,
         });
@@ -160,6 +222,10 @@ export default function WalletPage() {
 
     loadTransactions();
   }, [walletAddress]);
+
+  /* =====================================================
+       RENDER
+     ===================================================== */
 
   return (
     <>
@@ -216,12 +282,22 @@ export default function WalletPage() {
 
             {/* MINI TOKEN BOX */}
             <S.TokenMiniRow>
+              {/* USDT */}
               <div className="tokenBox">
                 <img
                   src="https://cryptologos.cc/logos/tether-usdt-logo.png"
                   alt="usdt"
                 />
                 <span>{usdtBalance.toFixed(2)} USDT</span>
+              </div>
+
+              {/* VEIL */}
+              <div className="tokenBox">
+                <img
+                  src="https://cryptologos.cc/logos/solana-sol-logo.png"
+                  alt="veil"
+                />
+                <span>{veilBalance.toFixed(2)} VEIL</span>
               </div>
             </S.TokenMiniRow>
           </S.BalanceCard>

@@ -3,8 +3,10 @@ import { animate } from "framer-motion";
 import { PrimaryButton } from "../../styles";
 import * as S from "./styles";
 import ModalCreate from "../ModalCreate";
-
-export function Header() {
+type Props = {
+  button?: boolean
+}
+export function Header({button}: Props) {
   const [open, setOpen] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
 
@@ -29,7 +31,7 @@ export function Header() {
       {/* MODAL DE CRIAÇÃO */}
       <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
 
-      <S.Header>
+      <S.Header >
         <div>
           <nav>
             <S.Logo href="/" className="flex items-center gap-2">
@@ -44,18 +46,19 @@ export function Header() {
             </S.Logo>
 
             {/* LINKS DESKTOP */}
-            <S.Links>
-              <button onClick={() => smoothScroll("#features")}>Features</button>
-              <button onClick={() => smoothScroll("#privacyTech")}>Security</button>
-              <S.LinkStyled to="/docs">Docs</S.LinkStyled>
-            </S.Links>
-
+{button === false ? (
+  <S.Links>
+    <button onClick={() => smoothScroll("#features")}>Features</button>
+    <button onClick={() => smoothScroll("#privacyTech")}>Security</button>
+    <S.LinkStyled to="/docs">Docs</S.LinkStyled>
+  </S.Links>
+) : null}
             {/* BOTÃO DESKTOP */}
             <PrimaryButton
               className="mobile-none"
               onClick={() => setOpenCreate(true)}
             >
-              launch App →
+              Launch App →
             </PrimaryButton>
 
             {/* BOTÃO HAMBURGUER (MOBILE) */}
@@ -72,24 +75,29 @@ export function Header() {
       </S.Header>
 
       {/* MENU MOBILE */}
-      <S.MobileMenu open={open} role="dialog" aria-modal={open}>
-        <S.MobileInner>
-          {/* Botão para fechar menu */}
-          <S.CloseButton onClick={() => setOpen(false)} aria-label="Close menu">
-            ×
-          </S.CloseButton>
+<S.MobileMenu open={open} role="dialog" aria-modal={open}>
+  <S.MobileInner>
+    {/* Botão para fechar menu */}
+    <S.CloseButton onClick={() => setOpen(false)} aria-label="Close menu">
+      ×
+    </S.CloseButton>
 
-          <div className="links">
-            <button onClick={() => smoothScroll("#privacy")}>Verifi</button>
-            <button onClick={() => smoothScroll("#features")}>Features</button>
-            <S.LinkStyled to="/docs">Docs</S.LinkStyled>
+    <div className="links">
 
-            <PrimaryButton onClick={() => setOpenCreate(true)}>
-              Get Started Now →
-            </PrimaryButton>
-          </div>
-        </S.MobileInner>
-      </S.MobileMenu>
+      {button === false && (
+        <>
+          <button onClick={() => smoothScroll("#features")}>Features</button>
+          <button onClick={() => smoothScroll("#privacyTech")}>Security</button>
+          <S.LinkStyled to="/docs">Docs</S.LinkStyled>
+        </>
+      )}
+
+      <PrimaryButton onClick={() => setOpenCreate(true)}>
+        Get Started Now →
+      </PrimaryButton>
+    </div>
+  </S.MobileInner>
+</S.MobileMenu>
     </S.MainContainer>
   );
 }

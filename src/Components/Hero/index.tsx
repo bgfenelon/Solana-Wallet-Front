@@ -3,11 +3,39 @@ import ModalCreate from "../ModalCreate";
 import ModalImport from "../ModalImport";
 import { PrimaryButton } from "../../styles";
 import * as S from "./styles";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Copy } from "lucide-react";
+import axion from "../../axion.jpg"
+import pumpf from "../../pumpFun.jpg"
+
 
 export function Hero() {
-  const [openCreate, setOpenCreate] = useState(false);
+    const [copied, setCopied] = useState(false);
+      const [openCreate, setOpenCreate] = useState(false);
   const [openImport, setOpenImport] = useState(false);
+
+
+  const copyToClipboard = async () => {
+    const text = "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump";
+
+
+ try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // fallback caso o navegador bloqueie o clipboard
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+
+  }
 
   return (
     <>
@@ -26,10 +54,28 @@ export function Hero() {
         </S.BackgroundGrid>
 
         <S.HeroInner>
-          <S.Badge>
-            <CheckCircle2 size={18} className="glow-icon" />
-            <span>Zero-Knowledge Privacy Protocol</span>
-          </S.Badge>
+          <S.Contract onClick={copyToClipboard}>
+            <Copy  size={18} className="glow-icon" />
+                        {/* MUDAR AQUI */}
+
+            <h6>CA: VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump</h6>
+          </S.Contract>
+
+            <S.ContractContainer>
+                        {/* MUDAR AQUI AXIOM */}
+            <S.ContractLink href="https://axiom.trade/meme/DZgvxpQhK1Gx7EgzxbVsgLhZ3JxDgZq1tngJVGhJnM86?chain=sol ">
+            <img src={axion} 
+            
+            />
+            
+          </S.ContractLink>
+                        {/* MUDAR AQUI PUMP FUN */}
+          <S.ContractLink href="https://pump.fun/coin/VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump">
+            <img src={pumpf} />
+            
+          </S.ContractLink>
+            </S.ContractContainer>
+
 
           <S.MainHeading>
             <span className="white">Private currency</span>

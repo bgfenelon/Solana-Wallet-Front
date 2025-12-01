@@ -8,7 +8,7 @@ import { PrivacyTech } from "../../Components/Privacy";
 export function Home() {
   return (
     <>
-      <Header />
+      <Header button={true} />
       <Hero/>
       <HowItWorks/>
       <PrivacyFeatures/>

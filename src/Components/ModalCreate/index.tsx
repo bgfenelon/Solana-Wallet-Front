@@ -3,10 +3,8 @@ import React, { useMemo, useState } from "react";
 import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
 import { useNavigate } from "react-router-dom";
+
 import * as bip39 from "bip39";
-
-
-
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 
@@ -19,8 +17,6 @@ interface Props {
 }
 
 export default function ModalCreate({ open, onClose }: Props) {
-  const mnemonic = bip39.generateMnemonic(); // 12 palavras
-  const seed = bip39.mnemonicToSeedSync(mnemonic);
   const [name, setName] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,22 +25,21 @@ export default function ModalCreate({ open, onClose }: Props) {
   const navigate = useNavigate();
   const { saveWallet } = useAuth();
 
-  // Gera nova wallet quando o modal abre
-const wallet = useMemo(() => {
-  if (!open) return null;
+  const wallet = useMemo(() => {
+    if (!open) return null;
 
-  const mnemonic = bip39.generateMnemonic(); // ✔ funciona 100%
-  const seed = bip39.mnemonicToSeedSync(mnemonic);
-  const seed32 = seed.slice(0, 32);
+    const mnemonic = bip39.generateMnemonic();
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    const seed32 = seed.slice(0, 32);
 
-  const kp = nacl.sign.keyPair.fromSeed(seed32);
+    const kp = nacl.sign.keyPair.fromSeed(seed32);
 
-  return {
-    mnemonic,
-    publicKey: bs58.encode(kp.publicKey),
-    secretKeyArray: Array.from(kp.secretKey),
-  };
-}, [open]);
+    return {
+      mnemonic,
+      publicKey: bs58.encode(kp.publicKey),
+      secretKey58: bs58.encode(kp.secretKey), // sempre base58
+    };
+  }, [open]);
 
   if (!open || !wallet) return null;
 
@@ -63,38 +58,30 @@ const wallet = useMemo(() => {
     setLoading(true);
 
     try {
-      // Envia seed phrase ao backend
-    await postJSON("/auth/import", {
-    input: JSON.stringify(wallet.secretKeyArray),
-    name: name.trim(),
-    });
+      // cadastrar no backend
+      await postJSON("/auth/import", {
+        input: wallet.secretKey58,   // base58
+        name: name.trim(),
+      });
 
-
-      // Salva no AuthContext
+      // salvar no sistema
       saveWallet({
         walletAddress: wallet.publicKey,
-        secretKey: wallet.secretKeyArray,
+        secretKey: wallet.secretKey58, // base58
       });
 
       onClose();
       navigate("/wallet");
-
     } catch (err: any) {
-      console.error(err);
       setError(err?.message || "Failed to create wallet");
     } finally {
       setLoading(false);
     }
-
   }
 
   return (
-    <S.Overlay >
-      <S.Description>
-        <h2>Your Seed Phrase</h2>
-        <p>Write down these 12 words in order. You'll need them to verify your backup.</p>
-        </S.Description>
-      <S.ModalContainer onClick={(e) => e.stopPropagation()} error={!!error}>
+    <S.Overlay>
+      <S.ModalContainer>
         <h2>Create Wallet (Solana)</h2>
 
         <h3>Seed Phrase</h3>
@@ -107,6 +94,7 @@ const wallet = useMemo(() => {
             setError(null);
           }}
         />
+
         <S.SeedBox>
           <p>{wallet.mnemonic}</p>
           <button onClick={() => navigator.clipboard.writeText(wallet.mnemonic)}>
@@ -114,22 +102,19 @@ const wallet = useMemo(() => {
           </button>
         </S.SeedBox>
 
-        <S.CheckRow className={error ? "error" : ""}>
+        <S.CheckRow>
           <input
             type="checkbox"
-            id="check"
             checked={confirmed}
             onChange={() => setConfirmed((s) => !s)}
           />
-          <label htmlFor='check'>I have written down my seed phrase and stored it in a secure location. I understand that losing it means losing acess to my wallet forever</label>
+          <label>I have saved my seed phrase</label>
         </S.CheckRow>
 
         {error && <S.ErrorMsg>{error}</S.ErrorMsg>}
 
         <S.Actions>
-          <S.SecondaryButton onClick={onClose} disabled={loading}>
-            Cancel
-          </S.SecondaryButton>
+          <S.SecondaryButton onClick={onClose}>Cancel</S.SecondaryButton>
 
           <PrimaryButton onClick={handleCreate} disabled={loading}>
             {loading ? "Creating..." : "Create →"}

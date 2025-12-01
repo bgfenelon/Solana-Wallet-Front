@@ -113,7 +113,7 @@ export const MainHeading = styled.h1`
   line-height: 1.2;
   text-wrap: balance;
 
-  
+
 
   span {
     &.primary {
@@ -138,6 +138,56 @@ export const MainHeading = styled.h1`
     font-size: 1.75rem;
   }
 `;
+
+  export const Contract = styled.button`
+  background-color:transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: auto;
+  margin-bottom: 20px;
+  padding: 7px 15px;
+  border-radius: 15px;
+  background-color:  color-mix(in oklab, var(--primary) 50%, transparent);
+  transition: all .5s;
+
+  &:hover{
+    transform: scale(1.1);
+  }
+  `;
+
+  export const ContractContainer = styled.div`
+  width:100%;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap:15px;
+  margin: 20px 0;
+
+  `
+
+
+  export const ContractLink = styled.a`
+  width:30px;
+  height:30px;
+  align-items: center;
+  cursor: pointer;
+  transition: all .5;
+
+  &:hover{
+    scale: (1.3);
+  }
+
+  img{
+    display: block;
+    width: 101%;
+    max-width: 101%;
+    border-radius: 100%;
+  }
+  `;
 
 /* Subtítulo */
 export const Subheading = styled.p`

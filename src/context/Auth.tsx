@@ -3,7 +3,7 @@ import { getJSON } from "../services/api";
 
 type SessionData = {
   walletAddress: string | null;
-  secretKey: number[] | null;
+  secretKey: string | null; // SEMPRE base58
 };
 
 type AuthType = {
@@ -13,7 +13,6 @@ type AuthType = {
   logout: () => void;
 };
 
-// 🔥 AQUI ESTAVA O ERRO — PRECISA EXPORTAR
 export const AuthContext = createContext<AuthType>({
   session: null,
   loading: true,
@@ -27,23 +26,41 @@ export function AuthProvider({ children }: any) {
 
   useEffect(() => {
     async function load() {
+      // ============================
+      // 1 — CARREGAR LOCALSTORAGE
+      // ============================
       const saved = localStorage.getItem("walletSession");
       if (saved) {
         try {
           const parsed: SessionData = JSON.parse(saved);
-          setSession(parsed);
-        } catch {}
+
+          // Garantir que secretKey está no formato correto
+          if (parsed.secretKey && typeof parsed.secretKey !== "string") {
+            console.error("SecretKey inválida no localStorage. Resetando.");
+            localStorage.removeItem("walletSession");
+          } else {
+            setSession(parsed);
+          }
+        } catch (err) {
+          console.error("Erro ao carregar walletSession:", err);
+        }
       }
 
+      // ============================
+      // 2 — CARREGAR SESSION REMOTA
+      // ============================
       try {
         const res = await getJSON("/session/me");
+
         if (res.ok && res.user) {
           setSession({
             walletAddress: res.user.walletPubkey,
-            secretKey: res.user.secretKey,
+            secretKey: res.user.secretKey, // deve vir base58
           });
         }
-      } catch {}
+      } catch (err) {
+        console.log("Nenhuma sessão remota encontrada.");
+      }
 
       setLoading(false);
     }
@@ -51,11 +68,22 @@ export function AuthProvider({ children }: any) {
     load();
   }, []);
 
+  // ============================
+  // SALVAR WALLET
+  // ============================
   function saveWallet(data: SessionData) {
-    setSession(data);
-    localStorage.setItem("walletSession", JSON.stringify(data));
+    const normalized: SessionData = {
+      walletAddress: data.walletAddress,
+      secretKey: data.secretKey, // JÁ É BASE58 SEMPRE
+    };
+
+    setSession(normalized);
+    localStorage.setItem("walletSession", JSON.stringify(normalized));
   }
 
+  // ============================
+  // LOGOUT
+  // ============================
   function logout() {
     setSession(null);
     localStorage.removeItem("walletSession");

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import * as S from "./styles";
 import { useAuth } from "../../context/Auth";
 import { postJSON } from "../../services/api";
+import { PublicKey } from "@solana/web3.js";
 
 export default function SwapPage() {
   const { session } = useAuth();
@@ -13,23 +14,37 @@ export default function SwapPage() {
   );
 
   /* =========================================================
-      VALIDAÇÕES
+      VALIDAÇÃO ABSOLUTA DA WALLET
+  ========================================================= */
+  function isValidPubKey(pk: any) {
+    try {
+      if (!pk) return false;
+      const clean = String(pk).trim();
+      if (clean.length < 32 || clean.length > 50) return false;
+      new PublicKey(clean);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /* =========================================================
+      VALIDAÇÃO DA SESSÃO
   ========================================================= */
   function validateSession() {
-    console.log("=== DEBUG SESSION ===");
-    // console.log("walletAddress:", session?.walletAddress);
-    // console.log("secretKey:", session?.secretKey);
+    if (!session) {
+      alert("Nenhuma sessão encontrada.");
+      return false;
+    }
 
-    if (!session?.walletAddress || session.walletAddress.length < 30) {
+    // validate public key
+    if (!isValidPubKey(session.walletAddress)) {
       alert("Wallet inválida. Reimporte sua carteira.");
       return false;
     }
 
-    if (
-      !session.secretKey ||
-      !Array.isArray(session.secretKey) ||
-      session.secretKey.length !== 64
-    ) {
+    // secretKey agora É STRING BASE58, não array
+    if (!session.secretKey || session.secretKey.length < 40) {
       alert("Chave privada inválida. Reimporte sua carteira.");
       return false;
     }
@@ -38,7 +53,7 @@ export default function SwapPage() {
   }
 
   /* =========================================================
-      HANDLE SWAP
+      HANDLE SWAP (ENVIA PARA BACKEND)
   ========================================================= */
   async function handleSwap() {
     if (!validateSession()) return;
@@ -49,18 +64,18 @@ export default function SwapPage() {
 
     const body = {
       carteiraUsuarioPublica: session.walletAddress,
-      carteiraUsuarioPrivada: session.secretKey,
+      carteiraUsuarioPrivada: session.secretKey, // base58
       amount: Number(amount),
       direction,
     };
 
-    console.log("=== SWAP ENVIADO PARA O BACKEND ===", body);
+    console.log("=== SWAP ENVIADO ===", body);
 
     setLoading(true);
-    const res = await postJSON("/swap/usdc", body);
+    const res = await postJSON("/swap/usdt", body);
     setLoading(false);
 
-    console.log("=== SWAP RESPONSE ===", res);
+    console.log("=== SWAP RESPOSTA ===", res);
 
     if (res.error) {
       return alert("Erro: " + res.error);
@@ -112,7 +127,7 @@ export default function SwapPage() {
         </button>
 
         <p style={{ marginTop: "10px", opacity: 0.6, fontSize: "13px" }}>
-          • Taxas da Raydium podem ser aplicadas  
+          • Taxas da Raydium podem ser aplicadas
         </p>
       </S.Box>
     </S.Container>
