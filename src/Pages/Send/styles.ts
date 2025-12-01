@@ -57,6 +57,9 @@ export const Box = styled.div`
   h1 {
     margin-bottom: 22px;
   }
+  select{
+    background-color: rgba(13, 5, 22, 0.6);
+  }
 
   input {
     width: 100%;

@@ -30,12 +30,11 @@ export const Box = styled.div`
     outline: none;
     width: 10=0%;
     background: rgba(255,255,255,0.08) ;
-    color: purple;
+    color: white;
   }
 
   select option {
   background-color: #111 !important; /* fundo das opções */
-  color: purple !important;
 }
 
 
