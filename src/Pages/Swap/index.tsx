@@ -127,7 +127,7 @@ export default function SwapPage() {
         </button>
 
         <p style={{ marginTop: "10px", opacity: 0.6, fontSize: "13px" }}>
-          • Taxas da Raydium podem ser aplicadas
+          • Conversion rates may apply.
         </p>
       </S.Box>
     </S.Container>
