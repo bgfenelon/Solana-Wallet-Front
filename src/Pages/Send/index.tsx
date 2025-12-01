@@ -8,14 +8,13 @@ export function SendPage() {
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   
-  // NOVO: token selecionado
   const [token, setToken] = useState<"SOL" | "USDC" | "VEIL">("SOL");
-
   const [loading, setLoading] = useState(false);
 
   async function handleSend() {
     const secret = session?.secretKey;
     const pubkey = session?.walletAddress;
+    const solBalance = session?.balance ?? 0; // ✔ caso vc armazene saldo no contexto
 
     if (!secret || !pubkey) {
       alert("Wallet not loaded.");
@@ -39,6 +38,20 @@ export function SendPage() {
       return;
     }
 
+    // ============================================================
+    // ⚠ AVISO IMPORTANTE: SPL TOKENS PRECISAM DE SOL PARA TAXA
+    // ============================================================
+    if (token !== "SOL") {
+      // se o dev não tem saldo no contexto, só remover essa parte ↓
+      if (solBalance < 0.003) {
+        alert(
+          "⚠ You don't have enough SOL to pay the network fee.\n\n" +
+          "Even when sending USDC or VEIL, the Solana network requires a small amount of SOL (≈0.002–0.003) to process the transaction."
+        );
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -46,7 +59,7 @@ export function SendPage() {
         secretKey: secret,
         recipient: to.trim(),
         amount: normalizedAmount,
-        token                        // ★ envia o token para o backend
+        token
       });
 
       if (res?.error) {
@@ -79,7 +92,6 @@ export function SendPage() {
           onChange={(e) => setTo(e.target.value)}
         />
 
-        {/* NOVO SELECT DE TOKEN */}
         <select
           value={token}
           onChange={(e) =>
