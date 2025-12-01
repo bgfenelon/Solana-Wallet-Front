@@ -155,6 +155,12 @@ width: 100%;
 padding: 40px ;
     border-radius: 18px;
         border: 1px solid rgba(157, 78, 221, 0.35);
+
+          &:hover {
+    background: rgba(157, 78, 221, 0.18);
+    transform: scale(0.97);
+    box-shadow: 0 0 12px rgba(157, 78, 221, 0.2);
+  }
 `
 
 /* ------------------------------- */

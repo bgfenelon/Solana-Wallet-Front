@@ -301,15 +301,22 @@ export default function WalletPage() {
               </div>
             </S.TokenMiniRow>
           </S.BalanceCard>
-
+<S.ActionGrid>
           <S.SwapButton onClick={() => navigate("/swap")}>
             <S.ActionIcon className="grid-one">
               <ArrowRightLeft />
             </S.ActionIcon>
             <div className="title">{check ? "Coming Soon " : ""}Swap</div>
+            <div className="subtitle">Exchange for SOL OR USDT</div>
+          </S.SwapButton>
+                    <S.SwapButton onClick={() => navigate("/wallet")}>
+            <S.ActionIcon className="grid-one">
+              <ArrowRightLeft />
+            </S.ActionIcon>
+            <div className="title">{check ? "Coming Soon " : ""}Coming soon: Swap For Veil</div>
             <div className="subtitle">Exchange for VEIL</div>
           </S.SwapButton>
-
+</S.ActionGrid>
           {/* BUTTONS */}
           <S.ActionGrid>
             <S.ActionButton to="/deposit">
