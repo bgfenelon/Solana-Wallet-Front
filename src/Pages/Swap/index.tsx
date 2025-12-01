@@ -53,7 +53,7 @@ export default function SwapPage() {
   }
 
   /* =========================================================
-      HANDLE SWAP (ENVIA PARA O BACKEND)
+      HANDLE SWAP (JUPITER)
   ========================================================= */
   async function handleSwap() {
     if (!validateSession()) return;
@@ -66,15 +66,15 @@ export default function SwapPage() {
       carteiraUsuarioPublica: session.walletAddress,
       carteiraUsuarioPrivada: session.secretKey, // base58
       amount: Number(amount),
-      direction, // agora USA direction SOL_USDC
+      direction,
     };
 
     console.log("=== SWAP ENVIADO ===", body);
 
     setLoading(true);
 
-    // 🔥 NOVO ENDPOINT PARA USDC
-    const res = await postJSON("/swap/usdc", body);
+    // 🔥 AGORA USAMOS O JUPITER
+    const res = await postJSON("/swap/jupiter", body);
 
     setLoading(false);
 
@@ -84,11 +84,17 @@ export default function SwapPage() {
       return alert("Erro: " + res.error);
     }
 
-    alert(`Swap realizado com sucesso!\nTx: ${res.assinatura}`);
+    alert(`Swap realizado com sucesso!\nTx: ${res.signature}`);
   }
 
   return (
     <S.Container>
+      <S.NavBar>
+        <button onClick={() => window.history.back()}>← Back</button>
+        <h2>Deposit</h2>
+        <h2></h2>
+      </S.NavBar>
+
       <S.Box>
         <h1>Swap</h1>
 

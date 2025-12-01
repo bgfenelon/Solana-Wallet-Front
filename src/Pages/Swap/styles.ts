@@ -20,7 +20,7 @@ export const Box = styled.div`
   flex-direction: column;
   gap: 20px;
 
-  input, select, option {
+  input, select {
     padding: 14px;
     border-radius: 10px;
     border: none;
@@ -30,6 +30,13 @@ export const Box = styled.div`
     color: white;
   }
 
+  select option {
+  background-color: #111 !important; /* fundo das opções */
+  color: #fff !important;
+}
+
+
+  
   button {
     background: #9d4edd;
     padding: 14px;
@@ -74,4 +81,38 @@ export const FeeNote = styled.div`
   font-size: 12px;
   opacity: 0.6;
   text-align: center;
+`;
+
+export const NavBar = styled.div`
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: left ;
+    background: none;
+    border: none;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 8px;
+    flex: 1;
+
+    &:hover {
+      color: var(--foreground);
+    }
+  }
+
+  h2 {
+    flex: 1;
+    font-size: 1.2rem;
+    color: var(--foreground);
+  }
 `;

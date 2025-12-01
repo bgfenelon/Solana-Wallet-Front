@@ -91,6 +91,7 @@ export default function TransactionsPage() {
 
   return (
     <S.PageContainer>
+
       <S.NavBar>
         <button onClick={() => window.history.back()}>← Back</button>
         <h2>Payment History</h2>
