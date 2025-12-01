@@ -9,8 +9,10 @@ export default function SwapPage() {
 
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [direction, setDirection] = useState<"SOL_TO_USDT" | "USDT_TO_SOL">(
-    "SOL_TO_USDT"
+
+  // AGORA USAMOS USDC
+  const [direction, setDirection] = useState<"SOL_TO_USDC" | "USDC_TO_SOL">(
+    "SOL_TO_USDC"
   );
 
   /* =========================================================
@@ -37,13 +39,11 @@ export default function SwapPage() {
       return false;
     }
 
-    // validate public key
     if (!isValidPubKey(session.walletAddress)) {
       alert("Wallet inválida. Reimporte sua carteira.");
       return false;
     }
 
-    // secretKey agora É STRING BASE58, não array
     if (!session.secretKey || session.secretKey.length < 40) {
       alert("Chave privada inválida. Reimporte sua carteira.");
       return false;
@@ -53,7 +53,7 @@ export default function SwapPage() {
   }
 
   /* =========================================================
-      HANDLE SWAP (ENVIA PARA BACKEND)
+      HANDLE SWAP (ENVIA PARA O BACKEND)
   ========================================================= */
   async function handleSwap() {
     if (!validateSession()) return;
@@ -66,13 +66,16 @@ export default function SwapPage() {
       carteiraUsuarioPublica: session.walletAddress,
       carteiraUsuarioPrivada: session.secretKey, // base58
       amount: Number(amount),
-      direction,
+      direction, // agora USA direction SOL_USDC
     };
 
     console.log("=== SWAP ENVIADO ===", body);
 
     setLoading(true);
-    const res = await postJSON("/swap/usdt", body);
+
+    // 🔥 NOVO ENDPOINT PARA USDC
+    const res = await postJSON("/swap/usdc", body);
+
     setLoading(false);
 
     console.log("=== SWAP RESPOSTA ===", res);
@@ -101,11 +104,11 @@ export default function SwapPage() {
             }}
             value={direction}
             onChange={(e) =>
-              setDirection(e.target.value as "SOL_TO_USDT" | "USDT_TO_SOL")
+              setDirection(e.target.value as "SOL_TO_USDC" | "USDC_TO_SOL")
             }
           >
-            <S.Option value="SOL_TO_USDT">SOL ➝ USDT</S.Option>
-            <S.Option value="USDT_TO_SOL">USDT ➝ SOL</S.Option>
+            <S.Option value="SOL_TO_USDC">SOL ➝ USDC</S.Option>
+            <S.Option value="USDC_TO_SOL">USDC ➝ SOL</S.Option>
           </select>
         </div>
 
@@ -115,9 +118,9 @@ export default function SwapPage() {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder={
-            direction === "SOL_TO_USDT"
+            direction === "SOL_TO_USDC"
               ? "Amount in SOL"
-              : "Amount in USDT"
+              : "Amount in USDC"
           }
         />
 
