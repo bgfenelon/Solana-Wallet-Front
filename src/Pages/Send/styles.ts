@@ -1,8 +1,44 @@
 import styled from "styled-components";
 
+export const NavBar = styled.div`
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: left ;
+    background: none;
+    border: none;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 8px;
+    flex: 1;
+
+    &:hover {
+      color: var(--foreground);
+    }
+  }
+
+  h2 {
+    flex: 1;
+    font-size: 1.2rem;
+    color: var(--foreground);
+  }
+`;
+
 export const PageContainer = styled.div`
   min-height: 100vh;
-  display: flex;
+  flex-direction: column;
+  display: grid;
+  grid-template-rows: 100px 1fr;
   justify-content: center;
   align-items: center;
   background: var(--background);

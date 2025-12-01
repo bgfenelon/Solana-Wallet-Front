@@ -12,6 +12,7 @@ import { useAuth } from "../../context/Auth";
 import { postUserBalance } from "../../services/api";
 import { PasswordVisibity } from "./styles";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { useNavigate } from "react-router-dom";
 
 export default function WalletPage() {
   const { session } = useAuth();
@@ -19,9 +20,12 @@ export default function WalletPage() {
 
   const [check, setCheck] = useState(false);
 
-  // BALANCE
+  // BALANCE (SOL)
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
+
+  // USDT BALANCE
+  const [usdtBalance, setUsdtBalance] = useState(0);
 
   // VISIBILITY
   const [visible, setVisible] = useState(true);
@@ -34,15 +38,15 @@ export default function WalletPage() {
   const connection = new Connection(
     "https://mainnet.helius-rpc.com/?api-key=1581ae46-832d-4d46-bc0c-007c6269d2d9"
   );
+  const navigate = useNavigate();
 
   /* ============================
-       1 — FETCH BALANCE API
+        1 — FETCH BALANCE API
      ============================ */
   useEffect(() => {
     async function fetchBalance() {
       try {
         if (!walletAddress || walletAddress.length < 20) {
-          console.warn("Invalid wallet address:", walletAddress);
           setLoadingBalance(false);
           return;
         }
@@ -62,19 +66,52 @@ export default function WalletPage() {
   }, [walletAddress]);
 
   /* ============================
-       2 — FETCH HISTORY (FIXED)
+        1.1 — FETCH USDT BALANCE
+     ============================ */
+  useEffect(() => {
+    async function loadUSDT() {
+      try {
+        if (!walletAddress) return;
+
+        const USDT_MINT = new PublicKey(
+          "Es9vMFrzaCERyN2rj8qJea2orGZf4d2Lr8DQJHuhJZ"
+        );
+
+        const tokenAccounts =
+          await connection.getParsedTokenAccountsByOwner(
+            new PublicKey(walletAddress),
+            { mint: USDT_MINT }
+          );
+
+        if (tokenAccounts.value.length === 0) {
+          setUsdtBalance(0);
+          return;
+        }
+
+        const uiAmount =
+          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+
+        setUsdtBalance(uiAmount || 0);
+      } catch (err) {
+        console.error("Erro carregando saldo USDT:", err);
+      }
+    }
+
+    loadUSDT();
+  }, [walletAddress]);
+
+  /* ============================
+        2 — FETCH HISTORY
      ============================ */
   useEffect(() => {
     async function loadTransactions() {
       try {
         if (!walletAddress || walletAddress.length < 20) {
-          console.warn("Invalid wallet for history.");
           setLoadingHistory(false);
           return;
         }
 
         const pubkey = new PublicKey(walletAddress);
-
         const signatures = await connection.getSignaturesForAddress(pubkey, {
           limit: 10,
         });
@@ -91,16 +128,12 @@ export default function WalletPage() {
           const pre = tx.meta.preBalances;
           const post = tx.meta.postBalances;
 
-          // -----------------------------
-          // 🔥 NOVA API SOLANA
-          // -----------------------------
           const keys = tx.transaction.message.getAccountKeys();
           const allKeys = keys.staticAccountKeys;
 
           const accountIndex = allKeys.findIndex(
             (k) => k.toBase58() === walletAddress
           );
-          // -----------------------------
 
           if (accountIndex === -1) continue;
 
@@ -110,7 +143,7 @@ export default function WalletPage() {
           txs.push({
             signature: sig.signature,
             slot: sig.slot,
-            time: sig.blockTime,
+            time: tx.blockTime,
             status: tx.meta.err ? "Failed" : "Success",
             amount: diffSol,
             direction: diffSol > 0 ? "received" : "sent",
@@ -119,7 +152,7 @@ export default function WalletPage() {
 
         setHistory(txs);
       } catch (error) {
-        console.error("Error loading transactions:", error);
+        console.error("Error loading history:", error);
       } finally {
         setLoadingHistory(false);
       }
@@ -143,9 +176,7 @@ export default function WalletPage() {
 
       <S.PageContainer>
         <S.Content>
-          {/* ==============================
-                        BALANCE
-              ============================== */}
+          {/* BALANCE CARD */}
           <S.BalanceCard>
             <S.BalanceHeader>
               <div className="left">
@@ -182,22 +213,28 @@ export default function WalletPage() {
                 : "............"}
               <span className="currency"> SOL</span>
             </S.BalanceValue>
+
+            {/* MINI TOKEN BOX */}
+            <S.TokenMiniRow>
+              <div className="tokenBox">
+                <img
+                  src="https://cryptologos.cc/logos/tether-usdt-logo.png"
+                  alt="usdt"
+                />
+                <span>{usdtBalance.toFixed(2)} USDT</span>
+              </div>
+            </S.TokenMiniRow>
           </S.BalanceCard>
-          
 
-            <S.SwapButton onClick={()=> setCheck(true)}>
-              <S.ActionIcon className="grid-one">
+          <S.SwapButton onClick={() => navigate("/swap")}>
+            <S.ActionIcon className="grid-one">
+              <ArrowRightLeft />
+            </S.ActionIcon>
+            <div className="title">{check ? "Coming Soon " : ""}Swap</div>
+            <div className="subtitle">Exchange for VEIL</div>
+          </S.SwapButton>
 
-                <ArrowRightLeft  />
-              </S.ActionIcon >
-              <div className="title">{check ? 'Coming Soon ' : ''}Swap</div>
-              <div className="subtitle">Exchange for VEIL</div>
-            </S.SwapButton>
-
-          {/* ==============================
-                        BUTTONS
-              ============================== */}
-
+          {/* BUTTONS */}
           <S.ActionGrid>
             <S.ActionButton to="/deposit">
               <S.ActionIcon className="purple">
@@ -214,67 +251,52 @@ export default function WalletPage() {
               <div className="title">Send</div>
               <div className="subtitle">Transfer SOL</div>
             </S.ActionButton>
-
-            
-
-            
           </S.ActionGrid>
 
-          {/* ==============================
-                 TRANSACTION HISTORY
-              ============================== */}
-
+          {/* HISTORY */}
           <S.PaymentHistory style={{ marginTop: "40px", color: "white" }}>
             <S.BalanceCard>
               <S.PaymentHeader>
                 <h3 style={{ fontSize: "1.2rem", marginBottom: "12px" }}>
                   Latest Transactions
                 </h3>
-                <S.SeeMore to={"/paymentHistory"}>
-                  See more {" ->"}
-                </S.SeeMore>
+                <S.SeeMore to={"/paymentHistory"}>See more {" ->"}</S.SeeMore>
               </S.PaymentHeader>
 
               {loadingHistory && <p>Loading...</p>}
-
               {!loadingHistory && history.length === 0 && (
                 <p>No transactions found.</p>
               )}
 
-              {history.map((tx, i) =>
-                i < 5 ? (
-                  <div
-                    key={i}
-                    style={{
-                      padding: "12px",
-                      borderBottom: "1px solid rgba(255,255,255,0.1)",
-                    }}
-                  >
+              {history.slice(0, 5).map((tx, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: "12px",
+                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  <p>
+                    <strong>Status:</strong> {tx.status}
+                  </p>
+                  <p>
+                    <strong>Transaction type:</strong>{" "}
+                    {tx.direction === "received" ? "Received" : "Sent"}
+                  </p>
+                  <p>
+                    <strong>Amount:</strong>{" "}
+                    {tx.amount > 0
+                      ? `+${tx.amount.toFixed(4)} SOL`
+                      : `${tx.amount.toFixed(4)} SOL`}
+                  </p>
+                  {tx.time && (
                     <p>
-                      <strong>Status:</strong> {tx.status}
+                      <strong>Date:</strong>{" "}
+                      {new Date(tx.time * 1000).toLocaleString()}
                     </p>
-
-                    <p>
-                      <strong>Transaction type:</strong>{" "}
-                      {tx.direction === "received" ? "Received" : "Sent"}
-                    </p>
-
-                    <p>
-                      <strong>Amount:</strong>{" "}
-                      {tx.amount > 0
-                        ? `+${tx.amount.toFixed(4)} SOL`
-                        : `${tx.amount.toFixed(4)} SOL`}
-                    </p>
-
-                    {tx.time && (
-                      <p>
-                        <strong>Date:</strong>{" "}
-                        {new Date(tx.time * 1000).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                ) : null
-              )}
+                  )}
+                </div>
+              ))}
             </S.BalanceCard>
           </S.PaymentHistory>
         </S.Content>

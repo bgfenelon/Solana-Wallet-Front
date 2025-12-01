@@ -305,3 +305,26 @@ export const SeeMore = styled(Link)`
 text-decoration: none;
 font-size: small;
 `
+export const TokenMiniRow = styled.div`
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+
+  .tokenBox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(157, 78, 221, 0.25);
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #e8d4ff;
+  }
+
+  .tokenBox img {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+  }
+`;
