@@ -7,6 +7,10 @@ export function SendPage() {
   const { session } = useAuth();
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
+  
+  // NOVO: token selecionado
+  const [token, setToken] = useState<"SOL" | "USDC" | "VEIL">("SOL");
+
   const [loading, setLoading] = useState(false);
 
   async function handleSend() {
@@ -28,7 +32,6 @@ export function SendPage() {
       return;
     }
 
-    // permite o usuário digitar "0,1"
     const normalizedAmount = Number(amount.replace(",", "."));
 
     if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
@@ -40,9 +43,10 @@ export function SendPage() {
 
     try {
       const res = await postJSON("/wallet/send", {
-        secretKey: secret,       // ✔ backend usa este
-        recipient: to.trim(),    // ✔ wallet destino
-        amount: normalizedAmount // ✔ sempre número válido
+        secretKey: secret,
+        recipient: to.trim(),
+        amount: normalizedAmount,
+        token                        // ★ envia o token para o backend
       });
 
       if (res?.error) {
@@ -60,13 +64,14 @@ export function SendPage() {
 
   return (
     <S.PageContainer>
-              <S.NavBar>
-                <button onClick={() => window.history.back()}>← Back</button>
-                <h2>Deposit</h2>
-                <h2></h2>
-              </S.NavBar>
+      <S.NavBar>
+        <button onClick={() => window.history.back()}>← Back</button>
+        <h2>Deposit</h2>
+        <h2></h2>
+      </S.NavBar>
+
       <S.Box>
-        <h1>Send SOL</h1>
+        <h1>Send</h1>
 
         <input
           placeholder="Destination wallet"
@@ -74,8 +79,27 @@ export function SendPage() {
           onChange={(e) => setTo(e.target.value)}
         />
 
+        {/* NOVO SELECT DE TOKEN */}
+        <select
+          value={token}
+          onChange={(e) =>
+            setToken(e.target.value as "SOL" | "USDC" | "VEIL")
+          }
+          style={{
+            padding: "10px",
+            borderRadius: "8px",
+            width: "100%",
+            marginTop: "10px",
+            marginBottom: "10px",
+          }}
+        >
+          <option value="SOL">SOL</option>
+          <option value="USDC">USDC</option>
+          <option value="VEIL">VEIL</option>
+        </select>
+
         <input
-          placeholder="Amount (SOL)"
+          placeholder={`Amount (${token})`}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />

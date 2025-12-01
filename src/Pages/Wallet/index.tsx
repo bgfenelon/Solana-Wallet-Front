@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 
 /* =====================================================
    VALIDAÇÃO ABSOLUTAMENTE SEGURA DE PUBLICKEY
-   ===================================================== */
+===================================================== */
 function isValidPubKey(pk: any): boolean {
   try {
     if (!pk) return false;
@@ -57,8 +57,8 @@ export default function WalletPage() {
   const navigate = useNavigate();
 
   /* =====================================================
-       1 — FETCH SOL BALANCE
-     ===================================================== */
+       1 — SOL BALANCE
+===================================================== */
   useEffect(() => {
     async function fetchBalance() {
       try {
@@ -82,7 +82,7 @@ export default function WalletPage() {
 
   /* =====================================================
        2 — USDC BALANCE
-     ===================================================== */
+===================================================== */
   useEffect(() => {
     async function loadUSDC() {
       try {
@@ -91,7 +91,6 @@ export default function WalletPage() {
           return;
         }
 
-        // ★ USDC MINT ADDRESS
         const USDC_MINT = new PublicKey(
           "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         );
@@ -121,7 +120,7 @@ export default function WalletPage() {
 
   /* =====================================================
        3 — VEIL BALANCE
-     ===================================================== */
+===================================================== */
   useEffect(() => {
     async function loadVEIL() {
       try {
@@ -158,8 +157,8 @@ export default function WalletPage() {
   }, [walletAddress]);
 
   /* =====================================================
-       4 — TRANSACTIONS HISTORY
-     ===================================================== */
+     4 — TRANSACTIONS HISTORY (SOL + qualquer SPL)
+===================================================== */
   useEffect(() => {
     async function loadTransactions() {
       try {
@@ -169,47 +168,85 @@ export default function WalletPage() {
           return;
         }
 
-        const pubkey = new PublicKey(walletAddress.trim());
-        const signatures = await connection.getSignaturesForAddress(pubkey, {
-          limit: 10,
+        const owner = new PublicKey(walletAddress.trim());
+
+        const signatures = await connection.getSignaturesForAddress(owner, {
+          limit: 20,
         });
 
-        const txs: any[] = [];
+        const txList: any[] = [];
 
-        for (const sig of signatures) {
-          const tx = await connection.getTransaction(sig.signature, {
+        for (const s of signatures) {
+          const tx = await connection.getTransaction(s.signature, {
             maxSupportedTransactionVersion: 0,
           });
 
           if (!tx || !tx.meta) continue;
 
-          const pre = tx.meta.preBalances;
-          const post = tx.meta.postBalances;
-          const keys = tx.transaction.message.getAccountKeys();
-          const allKeys = keys.staticAccountKeys;
+          const preSol = tx.meta.preBalances;
+          const postSol = tx.meta.postBalances;
 
-          const accountIndex = allKeys.findIndex(
+          const keys = tx.transaction.message.getAccountKeys();
+          const staticKeys = keys.staticAccountKeys;
+
+          const index = staticKeys.findIndex(
             (k) => k.toBase58() === walletAddress
           );
+          if (index === -1) continue;
 
-          if (accountIndex === -1) continue;
+          let items: any[] = [];
 
-          const diffLamports = post[accountIndex] - pre[accountIndex];
-          const diffSol = diffLamports / 1_000_000_000;
+          // SOL
+          const lamportsDiff = postSol[index] - preSol[index];
+          if (lamportsDiff !== 0) {
+            items.push({
+              mint: "SOL",
+              amount: lamportsDiff / 1e9,
+              direction: lamportsDiff > 0 ? "received" : "sent",
+            });
+          }
 
-          txs.push({
-            signature: sig.signature,
-            slot: sig.slot,
-            time: tx.blockTime,
-            status: tx.meta.err ? "Failed" : "Success",
-            amount: diffSol,
-            direction: diffSol > 0 ? "received" : "sent",
-          });
+          // SPL tokens
+          const preTokens = tx.meta.preTokenBalances || [];
+          const postTokens = tx.meta.postTokenBalances || [];
+
+          for (const pre of preTokens) {
+            const ownerMatch =
+              pre.owner?.toLowerCase() === walletAddress.toLowerCase();
+            if (!ownerMatch) continue;
+
+            const post = postTokens.find(
+              (p) => p.mint === pre.mint && p.owner === pre.owner
+            );
+            if (!post) continue;
+
+            const before = Number(pre.uiTokenAmount.uiAmount || 0);
+            const after = Number(post.uiTokenAmount.uiAmount || 0);
+            const diff = after - before;
+
+            if (diff !== 0) {
+              items.push({
+                mint: pre.mint,
+                amount: diff,
+                direction: diff > 0 ? "received" : "sent",
+              });
+            }
+          }
+
+          if (items.length > 0) {
+            txList.push({
+              signature: s.signature,
+              slot: s.slot,
+              time: tx.blockTime,
+              status: tx.meta.err ? "Failed" : "Success",
+              changes: items,
+            });
+          }
         }
 
-        setHistory(txs);
-      } catch (error) {
-        console.error("Error loading history:", error);
+        setHistory(txList);
+      } catch (err) {
+        console.error("ERROR HISTORY:", err);
       } finally {
         setLoadingHistory(false);
       }
@@ -220,7 +257,7 @@ export default function WalletPage() {
 
   /* =====================================================
        RENDER
-     ===================================================== */
+===================================================== */
 
   return (
     <>
@@ -342,9 +379,6 @@ export default function WalletPage() {
                 <h3 style={{ fontSize: "1.2rem", marginBottom: "12px" }}>
                   Latest Transactions
                 </h3>
-                <S.SeeMore to={"/paymentHistory"}>
-                  See more {" ->"}
-                </S.SeeMore>
               </S.PaymentHeader>
 
               {loadingHistory && <p>Loading...</p>}
@@ -363,16 +397,27 @@ export default function WalletPage() {
                   <p>
                     <strong>Status:</strong> {tx.status}
                   </p>
-                  <p>
-                    <strong>Transaction type:</strong>{" "}
-                    {tx.direction === "received" ? "Received" : "Sent"}
-                  </p>
-                  <p>
-                    <strong>Amount:</strong>{" "}
-                    {tx.amount > 0
-                      ? `+${tx.amount.toFixed(4)} SOL`
-                      : `${tx.amount.toFixed(4)} SOL`}
-                  </p>
+
+                  {/* Multi-token changes */}
+                  {tx.changes.map((c: any, j: number) => (
+                    <div key={j} style={{ margin: "8px 0", paddingLeft: "10px" }}>
+                      <p>
+                        <strong>Token:</strong>{" "}
+                        {c.mint === "SOL" ? "SOL" : c.mint}
+                      </p>
+
+                      <p>
+                        <strong>Direction:</strong>{" "}
+                        {c.direction === "received" ? "Received" : "Sent"}
+                      </p>
+
+                      <p>
+                        <strong>Amount:</strong>{" "}
+                        {c.amount > 0 ? `+${c.amount}` : c.amount}
+                      </p>
+                    </div>
+                  ))}
+
                   {tx.time && (
                     <p>
                       <strong>Date:</strong>{" "}
