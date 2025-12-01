@@ -100,6 +100,8 @@ export const Badge = styled.div`
 
   /* Responsivo */
   @media (max-width: 480px) {
+    word-wrap: break-word;
+    max-width: 400px;
     padding: 6px 14px;
     span {
       font-size: 0.75rem;
@@ -148,6 +150,7 @@ export const MainHeading = styled.h1`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  word-break: break-word;
 
   margin: 0 auto 25px auto;
   padding: 8px 18px;
@@ -169,6 +172,8 @@ export const MainHeading = styled.h1`
   @media (max-width: 480px) {
     padding: 6px 14px;
     margin-bottom: 32px;
+    max-width: 400px;
+
 
     h6 {
       font-size: 0.78rem;
@@ -178,6 +183,8 @@ export const MainHeading = styled.h1`
 
 export const ContractContainer = styled.div`
   width: 100%;
+word-break: break-all;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,7 +207,7 @@ export const ContractLink = styled.a`
   display: flex;
   align-items: center;
   justify-content: center;
-
+word-break: break-all;
   width: 42px;
   height: 42px;
 
