@@ -115,7 +115,7 @@ export function SendPage() {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
-
+- Transactions may require SOL for network fees.
         <button disabled={loading} onClick={handleSend}>
           {loading ? "Sending..." : "Send"}
         </button>
