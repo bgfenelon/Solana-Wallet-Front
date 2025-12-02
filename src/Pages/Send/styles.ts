@@ -13,7 +13,7 @@ export const NavBar = styled.div`
   button {
     display: flex;
     align-items: center;
-    justify-content: left ;
+    justify-content: left;
     background: none;
     border: none;
     color: var(--muted-foreground);
@@ -32,6 +32,20 @@ export const NavBar = styled.div`
     font-size: 1.2rem;
     color: var(--foreground);
   }
+
+  /* MOBILE */
+  @media (max-width: 420px) {
+    gap: 8px;
+
+    button {
+      font-size: 14px;
+      padding: 6px;
+    }
+
+    h2 {
+      font-size: 1rem;
+    }
+  }
 `;
 
 export const PageContainer = styled.div`
@@ -43,14 +57,30 @@ export const PageContainer = styled.div`
   align-items: center;
   background: var(--background);
   padding: 24px;
+
+  /* MOBILE */
+  @media (max-width: 500px) {
+    padding: 16px;
+    grid-template-rows: 80px 1fr;
+  }
+
+  @media (max-width: 380px) {
+    padding: 12px;
+  }
 `;
+
 export const From = styled.div`
-width: 100%;
-word-wrap: break-word;
-border: 1px solid;
-padding: 10px 20px;
-border-radius: 10px;
-`
+  width: 100%;
+  word-wrap: break-word;
+  border: 1px solid;
+  padding: 10px 20px;
+  border-radius: 10px;
+
+  @media (max-width: 420px) {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+`;
 
 export const Box = styled.div`
   min-width: 500px;
@@ -65,10 +95,12 @@ export const Box = styled.div`
   h1 {
     margin-bottom: 22px;
   }
+
   h2 {
     margin-bottom: 20px;
   }
-  select{
+
+  select {
     background-color: rgba(13, 5, 22, 0.6);
   }
 
@@ -108,14 +140,57 @@ export const Box = styled.div`
       transform: none;
     }
   }
-`;
 
+  /* TABLET */
+  @media (max-width: 550px) {
+    min-width: 100%;
+    padding: 24px;
+  }
+
+  /* MOBILE */
+  @media (max-width: 420px) {
+    padding: 20px;
+    border-radius: 16px;
+
+    h1 {
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+    }
+
+    input {
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 12px;
+      font-size: 0.95rem;
+    }
+  }
+
+  /* EXTRA SMALL DEVICES */
+  @media (max-width: 350px) {
+    padding: 16px;
+
+    h1 {
+      font-size: 1.15rem;
+    }
+
+    input {
+      font-size: 13px;
+    }
+  }
+`;
 
 export const Field = styled.div`
   margin-bottom: 18px;
   display: flex;
   flex-direction: column;
-
 
   label {
     color: #ccc;
@@ -123,7 +198,8 @@ export const Field = styled.div`
     margin-bottom: 6px;
   }
 
-  input, select {
+  input,
+  select {
     padding: 12px;
     border-radius: 10px;
     border: 1px solid #333;
@@ -136,6 +212,19 @@ export const Field = styled.div`
     &:focus {
       border-color: #4b7bec;
       background: #222;
+    }
+  }
+
+  /* MOBILE */
+  @media (max-width: 420px) {
+    label {
+      font-size: 13px;
+    }
+
+    input,
+    select {
+      padding: 10px;
+      font-size: 14px;
     }
   }
 `;
