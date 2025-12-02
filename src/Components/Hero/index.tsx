@@ -65,9 +65,10 @@ export function Hero() {
           </S.MainHeading>
 
           <S.Subheading>
-            The first fully private digital wallet. Send, receive, and hold crypto
-            with complete anonymity. Your balance stays hidden. Your transactions
-            stay private.
+            The first fully private wallet on Solana. Send, receive,
+             and hold SOL with complete anonymity. Your balance stays hidden.
+              Your transactions stay private.
+
           </S.Subheading>
 
           <S.Buttons>

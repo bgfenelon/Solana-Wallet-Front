@@ -92,7 +92,7 @@ export const HeroInner = styled.div`
   flex-direction: column;
   align-items: center;
   padding-top: 120px;
-  margin-top: 70px;
+  margin-top: 80px;
 
   @media (max-width: 768px) {
     max-width: 90%;

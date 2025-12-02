@@ -44,8 +44,16 @@ export const PageContainer = styled.div`
   background: var(--background);
   padding: 24px;
 `;
+export const From = styled.div`
+width: 100%;
+word-wrap: break-word;
+border: 1px solid;
+padding: 10px 20px;
+border-radius: 10px;
+`
 
 export const Box = styled.div`
+  min-width: 500px;
   background: rgba(13, 5, 22, 0.6);
   border: 1px solid rgba(157, 78, 221, 0.3);
   padding: 28px;
@@ -56,6 +64,9 @@ export const Box = styled.div`
 
   h1 {
     margin-bottom: 22px;
+  }
+  h2 {
+    margin-bottom: 20px;
   }
   select{
     background-color: rgba(13, 5, 22, 0.6);
@@ -104,6 +115,7 @@ export const Field = styled.div`
   margin-bottom: 18px;
   display: flex;
   flex-direction: column;
+
 
   label {
     color: #ccc;

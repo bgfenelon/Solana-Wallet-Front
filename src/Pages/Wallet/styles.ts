@@ -334,3 +334,80 @@ export const TokenMiniRow = styled.div`
     border-radius: 50%;
   }
 `;
+
+/* ================================
+      NOTIFICATION STYLE HISTORY
+================================ */
+export const NotificationItem = styled.div`
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(157, 78, 221, 0.15);
+  padding: 14px 18px;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+
+  transition: 0.15s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(157, 78, 221, 0.12);
+    transform: scale(0.98);
+  }
+`;
+
+export const NotificationIcon = styled.div<{ type: "sent" | "received" }>`
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 14px;
+  font-weight: bold;
+
+  background: ${({ type }) =>
+    type === "received"
+      ? "rgba(0, 255, 120, 0.15)"
+      : "rgba(255, 0, 80, 0.15)"};
+
+  border: 1px solid
+    ${({ type }) =>
+      type === "received"
+        ? "rgba(0, 255, 120, 0.35)"
+        : "rgba(255, 0, 80, 0.35)"};
+
+  color: ${({ type }) =>
+    type === "received" ? "#4dff9a" : "#ff4d6b"};
+`;
+
+export const NotificationInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .title {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .subtitle {
+    color: #b7a3d6;
+    font-size: 0.8rem;
+  }
+`;
+
+export const TittleHistoric = styled.h2`
+  font-size: "1.2rem";
+  padding: 30px;
+  width: 100%;
+`
+
+export const Paragraph = styled.p`
+
+`

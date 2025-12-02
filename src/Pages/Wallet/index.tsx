@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import * as S from "./styles";
 import {
+  ArrowDownLeft,
+  ArrowDownRight,
   ArrowRightLeft,
+  ArrowUpLeft,
+  ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
   Eye,
   EyeOff,
   Send,
@@ -258,6 +264,18 @@ export default function WalletPage() {
   /* =====================================================
        RENDER
 ===================================================== */
+function formatAmount(amount: number, decimals = 9) {
+  if (!amount) return "0";
+
+  // Remove notação científica
+  const fixed = amount.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals,
+    useGrouping: false,
+  });
+
+  return fixed;
+}
 
   return (
     <>
@@ -373,61 +391,53 @@ export default function WalletPage() {
           </S.ActionGrid>
 
           {/* HISTORY */}
-          <S.PaymentHistory style={{ marginTop: "40px", color: "white" }}>
-            <S.BalanceCard>
-              <S.PaymentHeader>
-                <h3 style={{ fontSize: "1.2rem", marginBottom: "12px" }}>
-                  Latest Transactions
-                </h3>
-              </S.PaymentHeader>
+{/* HISTORY — ESTILO NOTIFICAÇÃO FLEX */}
+<S.PaymentHistory style={{ marginTop: "40px", color: "white" }}>
+  <S.BalanceCard>
+    <S.PaymentHeader>
+      <S.TittleHistoric>Latest Transactions</S.TittleHistoric>
+    </S.PaymentHeader>
 
-              {loadingHistory && <p>Loading...</p>}
-              {!loadingHistory && history.length === 0 && (
-                <p>No transactions found.</p>
-              )}
+    {loadingHistory && <p>Loading...</p>}
+    {!loadingHistory && history.length === 0 && (
+      <S.Paragraph>No transactions found.</S.Paragraph>
+    )}
 
-              {history.slice(0, 5).map((tx, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: "12px",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <p>
-                    <strong>Status:</strong> {tx.status}
-                  </p>
+    {history.slice(0, 5).map((tx, i) => (
+      <React.Fragment key={i}>
+        {tx.changes.map((c: any, j: number) => (
+          <S.NotificationItem key={j}>
+            
+            {/* ÍCONE */}
+            <S.NotificationIcon type={c.direction}>
+              {c.direction === "received" ? <  ArrowDownLeft/> : < ArrowUpLeft />}
+            </S.NotificationIcon>
 
-                  {/* Multi-token changes */}
-                  {tx.changes.map((c: any, j: number) => (
-                    <div key={j} style={{ margin: "8px 0", paddingLeft: "10px" }}>
-                      <p>
-                        <strong>Token:</strong>{" "}
-                        {c.mint === "SOL" ? "SOL" : c.mint}
-                      </p>
+            {/* INFO */}
+            <S.NotificationInfo>
+              <div className="title">
+                {c.direction === "received" ? "Received " : "Sent "}
+                {c.mint === "SOL" ? "SOL" : c.mint}
+              </div>
 
-                      <p>
-                        <strong>Direction:</strong>{" "}
-                        {c.direction === "received" ? "Received" : "Sent"}
-                      </p>
+              <div className="subtitle">
+                {c.amount > 0 ? `+${formatAmount(c.amount)}` : formatAmount(c.amount)}
+              </div>
 
-                      <p>
-                        <strong>Amount:</strong>{" "}
-                        {c.amount > 0 ? `+${c.amount}` : c.amount}
-                      </p>
-                    </div>
-                  ))}
-
-                  {tx.time && (
-                    <p>
-                      <strong>Date:</strong>{" "}
-                      {new Date(tx.time * 1000).toLocaleString()}
-                    </p>
-                  )}
+              {tx.time && (
+                <div className="time">
+                  {new Date(tx.time * 1000).toLocaleString()}
                 </div>
-              ))}
-            </S.BalanceCard>
-          </S.PaymentHistory>
+              )}
+            </S.NotificationInfo>
+
+          </S.NotificationItem>
+        ))}
+      </React.Fragment>
+    ))}
+  </S.BalanceCard>
+</S.PaymentHistory>
+
         </S.Content>
       </S.PageContainer>
     </>

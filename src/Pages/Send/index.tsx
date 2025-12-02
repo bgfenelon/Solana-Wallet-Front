@@ -60,14 +60,17 @@ export default function SendPage() {
     <S.PageContainer>
             <S.NavBar>
               <button onClick={() => window.history.back()}>← Back</button>
-              <h2>Swap</h2>
+              <h2>Send</h2>
+              <h2></h2>
+
+              
             </S.NavBar>
       <S.Box>
         <h2>Send</h2>
 
         <S.Field>
           <label>From</label>
-          <div className="mono">{from}</div>
+          <S.From className="mono">{from}</S.From>
         </S.Field>
 
         <S.Field>
