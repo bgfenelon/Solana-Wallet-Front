@@ -7,7 +7,6 @@ export const MainHeroContent = styled.section`
   padding-bottom: 20%;
   padding-left: 6%;
   padding-right: 6%;
-  padding-top: 60px;
   width: 100%;
   overflow: hidden;
   display: flex;
@@ -92,7 +91,8 @@ export const HeroInner = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 40px;
+  padding-top: 120px;
+  margin-top: 70px;
 
   @media (max-width: 768px) {
     max-width: 90%;
