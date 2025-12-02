@@ -6,8 +6,16 @@ export const MainContainer = styled.div`
   z-index: 10;
   position: fixed;
   width: 100%;
-  border-bottom: 1px solid rgba(157, 78, 221, 0.20);
+  border-bottom: 1px solid rgba(154, 49, 240, 0.2);
+  height: 64px;
+  width: 100%;
 `;
+export const Block = styled.div`
+  height: 64px;
+  width: 100%;
+  display: block;
+  padding: 20px;
+`
 
 export const Header = styled.header`
   top: 0;
@@ -26,6 +34,7 @@ export const Header = styled.header`
   }
 
   nav {
+    height: 80px;
     height: 100%;
     display: flex;
     justify-content: space-between;

@@ -2,8 +2,7 @@ import styled from "styled-components";
 import { sizes, fontSizes } from "../styles";
 
 export const Section = styled.section`
-  height: 100vh;
-  padding: 96px 24px;
+  height: 70vh;
   background: var(--background);
   display: flex;
   align-items: center;

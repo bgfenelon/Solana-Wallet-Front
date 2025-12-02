@@ -59,6 +59,12 @@ export function Hero() {
 
           <S.MainHeading>
             <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-ZVjMTys6STYDB0t4fhhg5UozJDxBAq.png" alt="" />
+              <S.Contract onClick={copyToClipboard}>
+            <Copy  size={18} className="glow-icon" />
+                        {/* MUDAR AQUI */}
+
+            <h6 onClick={()=>copyToClipboard()}>CA - VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump</h6>
+          </S.Contract>
             <h1><span >Private currency </span> <br />
             <span  className="primary">for everyone</span></h1>
             <br />
@@ -94,12 +100,7 @@ export function Hero() {
               <CheckCircle2 size={20} className="glow-icon" />
               <span>Lightning Fast</span>
             </div> */}
-                      <S.Contract onClick={copyToClipboard}>
-            <Copy  size={18} className="glow-icon" />
-                        {/* MUDAR AQUI */}
-
-            <h6 onClick={()=>copyToClipboard()}>VEIL - Copy Contract</h6>
-          </S.Contract>
+                    
 
             {/* <S.ContractContainer>
                          MUDAR AQUI AXIOM 

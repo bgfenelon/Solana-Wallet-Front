@@ -30,11 +30,13 @@ export function Header({ button }: Props) {
   };
 
   return (
+  <>
     <S.MainContainer>
       {/* MODAL DE CRIAÇÃO */}
       <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
 
       <S.Header>
+
         <div>
           <nav>
             <S.Logo href="/" className="flex items-center gap-2">
@@ -126,7 +128,9 @@ export function Header({ button }: Props) {
         </S.MobileInner>
       </S.MobileMenu>
     </S.MainContainer>
+  <S.Block/>
+
+</>
   );
 }
-
 export default Header;

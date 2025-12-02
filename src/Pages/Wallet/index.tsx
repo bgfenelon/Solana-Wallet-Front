@@ -2,12 +2,8 @@ import React, { useEffect, useState } from "react";
 import * as S from "./styles";
 import {
   ArrowDownLeft,
-  ArrowDownRight,
   ArrowRightLeft,
   ArrowUpLeft,
-  ArrowUpRight,
-  ChevronDown,
-  ChevronUp,
   Eye,
   EyeOff,
   Send,
@@ -21,7 +17,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { useNavigate } from "react-router-dom";
 
 /* =====================================================
-   VALIDAÇÃO ABSOLUTAMENTE SEGURA DE PUBLICKEY
+   VALIDAÇÃO DE PUBLICKEY
 ===================================================== */
 function isValidPubKey(pk: any): boolean {
   try {

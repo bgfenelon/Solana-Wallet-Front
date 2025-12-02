@@ -13,7 +13,6 @@ export function Home() {
       <HowItWorks/>
       <PrivacyFeatures/>
       <PrivacyTech/>
-
       <Footer/>
 
       </>
