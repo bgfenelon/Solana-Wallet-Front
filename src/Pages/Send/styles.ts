@@ -98,3 +98,32 @@ export const Box = styled.div`
     }
   }
 `;
+
+
+export const Field = styled.div`
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+
+  label {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  input, select {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #1d1d1d;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: 0.2s;
+
+    &:focus {
+      border-color: #4b7bec;
+      background: #222;
+    }
+  }
+`;

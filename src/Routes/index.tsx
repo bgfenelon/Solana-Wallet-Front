@@ -5,7 +5,7 @@ import Wallet from "../Pages/Wallet";
 import Deposit from "../Pages/Deposit";
 import Activity from "../Pages/Activity";
 import WalletWithdraw from "../Pages/WalletWithdraw";
-import { SendPage } from "../Pages/Send";
+import SendPage from "../Pages/Send";
 import PaymentHistory from "../Pages/PaymentHistory";
 import Docs from "../Pages/Docs";
 import SwapUSDC from "../Pages/Swap";
