@@ -4,16 +4,25 @@ import { sizes, fontSizes } from "../../styles";
 /* Container principal do Hero */
 export const MainHeroContent = styled.section`
   position: relative;
-  padding-top: 150px;
   padding-bottom: 20%;
   padding-left: 6%;
   padding-right: 6%;
+  padding-top: 60px;
   width: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
+  img{
+    width: 150px;
+  }
+  h1{
+    font-size: 2em;
+  }
 
   background: linear-gradient(135deg, #000000 0%, #360b69ff 50%, #000000 100%);
-  height: calc(100vh - 120px);
 
   /* Responsivo */
   @media (max-width: 1024px) {
@@ -22,17 +31,29 @@ export const MainHeroContent = styled.section`
 
   @media (max-width: 768px) {
     min-height: 100%;
-    padding-top: 10px;
+    padding-top: 80px;
     padding-left: 4%;
     padding-right: 4%;
     padding-bottom: 25%;
     height: 100%;
+    h1{
+    font-size: 1.7em;
+  }
+    img{
+    width: 100px;
+  }
     
   }
 
   @media (max-width: 480px) {
     padding-top: 80px;
     padding-bottom: 30%;
+    h1{
+      font-size: 28px;
+    }
+  }
+      img{
+    width: 80px;
   }
 `;
 
@@ -68,10 +89,15 @@ export const HeroInner = styled.div`
   margin: 0 auto;
   text-align: center;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
 
   @media (max-width: 768px) {
     max-width: 90%;
     padding-top: 20px;
+    height: 100%;
   }
 `;
 
@@ -113,7 +139,6 @@ export const Badge = styled.div`
 export const MainHeading = styled.h1`
   font-weight: bold;
   font-size: ${fontSizes.xxlarge};
-  margin-bottom: 24px;
   line-height: 1.2;
   text-wrap: balance;
 

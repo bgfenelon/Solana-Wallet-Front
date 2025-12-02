@@ -54,33 +54,14 @@ export function Hero() {
         </S.BackgroundGrid>
 
         <S.HeroInner>
-          <S.Contract onClick={copyToClipboard}>
-            <Copy  size={18} className="glow-icon" />
-                        {/* MUDAR AQUI */}
 
-            <h6>CA: VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump</h6>
-          </S.Contract>
-
-            <S.ContractContainer>
-                        {/* MUDAR AQUI AXIOM */}
-            <S.ContractLink href="https://axiom.trade/meme/DZgvxpQhK1Gx7EgzxbVsgLhZ3JxDgZq1tngJVGhJnM86?chain=sol ">
-            <img src={axion} 
-            
-            />
-            
-          </S.ContractLink>
-                        {/* MUDAR AQUI PUMP FUN */}
-          <S.ContractLink href="https://pump.fun/coin/VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump">
-            <img src={pumpf} />
-            
-          </S.ContractLink>
-            </S.ContractContainer>
 
 
           <S.MainHeading>
-            <span className="white">Private currency</span>
+            <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-ZVjMTys6STYDB0t4fhhg5UozJDxBAq.png" alt="" />
+            <h1><span >Private currency </span> <br />
+            <span  className="primary">for everyone</span></h1>
             <br />
-            <span className="primary">for everyone</span>
           </S.MainHeading>
 
           <S.Subheading>
@@ -100,7 +81,7 @@ export function Hero() {
           </S.Buttons>
 
           <S.Features>
-            <div>
+            {/* <div>
               <CheckCircle2 size={20} className="glow-icon" />
               <span>No KYC Required</span>
             </div>
@@ -111,7 +92,28 @@ export function Hero() {
             <div>
               <CheckCircle2 size={20} className="glow-icon" />
               <span>Lightning Fast</span>
-            </div>
+            </div> */}
+                      <S.Contract onClick={copyToClipboard}>
+            <Copy  size={18} className="glow-icon" />
+                        {/* MUDAR AQUI */}
+
+            <h6 onClick={()=>copyToClipboard()}>VEIL - Copy Contract</h6>
+          </S.Contract>
+
+            {/* <S.ContractContainer>
+                         MUDAR AQUI AXIOM 
+            <S.ContractLink href="https://axiom.trade/meme/DZgvxpQhK1Gx7EgzxbVsgLhZ3JxDgZq1tngJVGhJnM86?chain=sol ">
+            <img src={axion} 
+            
+            />
+            
+          </S.ContractLink>
+                        {/* MUDAR AQUI PUMP FUN 
+          <S.ContractLink href="https://pump.fun/coin/VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump">
+            <img src={pumpf} />
+            
+          </S.ContractLink>
+            </S.ContractContainer> */}
           </S.Features>
         </S.HeroInner>
       </S.MainHeroContent>

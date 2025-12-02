@@ -49,7 +49,7 @@ export function Header({ button }: Props) {
             </S.Logo>
 
             {/* LINKS DESKTOP */}
-            {button === false ? (
+            {button === true ? (
               <S.Links>
                 <button onClick={() => smoothScroll("#features")}>
                   Features
