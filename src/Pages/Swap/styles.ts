@@ -12,6 +12,10 @@ export const Container = styled.div`
   gap: 100px;
 `;
 
+export const PageContainer = styled.div``
+export const Field = styled.div``
+
+
 export const Box = styled.div`
   background: rgba(255, 255, 255, 0.05);
   padding: 35px;
@@ -28,7 +32,7 @@ export const Box = styled.div`
     border-radius: 10px;
     border: none;
     outline: none;
-    width: 10=0%;
+    width: 100%;
     background: rgba(255,255,255,0.08) ;
     color: white;
   }

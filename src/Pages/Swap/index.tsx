@@ -1,520 +1,321 @@
 import React, { useState, useEffect } from "react";
 import * as S from "./styles";
-import { useAuth } from "../../context/Auth";
+
+import { useAuth } from "../../hooks/useAuth";
 import {
   Connection,
   Keypair,
   VersionedTransaction,
-  PublicKey,
-  LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+
 import bs58 from "bs58";
 
-/* -----------------------------------------------------
-   CONFIG - USANDO ENDPOINT ALTERNATIVO CONFIÁVEL
------------------------------------------------------ */
+/* ------------------------------------------
+   CONFIGURAÇÕES
+------------------------------------------- */
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const USDC_DECIMALS = 6;
-
-// ENDPOINT ALTERNATIVO PÚBLICO - MUITO CONFIAVÉL
-const JUPITER_QUOTE_API = "https://quote-api.jup.ag/v6/quote";
-const JUPITER_SWAP_API = "https://quote-api.jup.ag/v6/swap";
-
-// Fallback para caso o principal falhe (raro, mas seguro)
-const FALLBACK_ENDPOINTS = [
-  "https://jupiter-api-v6.fly.dev/v6", // Réplica oficial
-  "https://jup.ag/v6", // Gateway alternativo
-];
 
 const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
 
-/* -----------------------------------------------------
-   FUNÇÃO AUXILIAR: fetch com retry e fallback
------------------------------------------------------ */
-async function robustFetch(url: string, options?: RequestInit, isFallback = false): Promise<Response> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
-    
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        ...(options?.headers || {}),
-      },
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok && !isFallback) {
-      // Se não for fallback e falhou, tenta os fallbacks
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    return response;
-  } catch (error) {
-    if (isFallback) {
-      throw error; // Já está no fallback, propaga o erro
-    }
-    
-    // Tenta endpoints de fallback
-    for (const baseUrl of FALLBACK_ENDPOINTS) {
-      try {
-        const fallbackUrl = url.replace(JUPITER_QUOTE_API, `${baseUrl}/quote`).replace(JUPITER_SWAP_API, `${baseUrl}/swap`);
-        console.log(`Tentando fallback: ${fallbackUrl}`);
-        return await robustFetch(fallbackUrl, options, true);
-      } catch (fallbackError) {
-        continue;
-      }
-    }
-    
-    throw error;
-  }
-}
-
-/* -----------------------------------------------------
-   COMPONENT
------------------------------------------------------ */
 export default function SwapPage() {
-  const { session } = useAuth();
+  const auth = useAuth();
 
   const [amount, setAmount] = useState("");
+  const [token, setToken] = useState<"SOL" | "USDC">("SOL");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [estimated, setEstimated] = useState("");
-  const [direction, setDirection] = useState<"SOL_TO_USDC" | "USDC_TO_SOL">("SOL_TO_USDC");
-  const [status, setStatus] = useState<string>("");
 
-  /* -----------------------------------------------------
-     VALIDADORES
-  ----------------------------------------------------- */
-  function parsePrivateKey(key: string): Keypair {
+  const [quoteInfo, setQuoteInfo] = useState<{
+    outAmount?: string;
+    priceImpact?: string;
+  }>({});
+
+  const [isGettingQuote, setIsGettingQuote] = useState(false);
+
+  const from = auth?.session?.walletAddress || "";
+  const secretKey = auth?.session?.secretKey || "";
+
+  /* ------------------------------------------
+     PRIVATE KEY PARSER
+  ------------------------------------------- */
+  function parsePrivateKey(secretKey: string): Keypair {
     try {
-      if (key.startsWith("[")) {
-        const arr = JSON.parse(key);
-        return Keypair.fromSecretKey(new Uint8Array(arr));
+      if (secretKey.startsWith("[")) {
+        return Keypair.fromSecretKey(new Uint8Array(JSON.parse(secretKey)));
       }
-      return Keypair.fromSecretKey(bs58.decode(key));
-    } catch (err: any) {
-      throw new Error(`Chave inválida: ${err.message}`);
+      return Keypair.fromSecretKey(bs58.decode(secretKey));
+    } catch (e: any) {
+      throw new Error("Chave privada inválida.");
     }
   }
 
-  function validateSession(): boolean {
-    if (!session) {
-      alert("Nenhuma sessão encontrada.");
+  /* ------------------------------------------
+     INPUT VALIDATION
+  ------------------------------------------- */
+  function validateInputs() {
+    if (!from) {
+      setError("Carteira não conectada.");
+      return false;
+    }
+    if (!secretKey) {
+      setError("Chave privada não encontrada.");
       return false;
     }
 
-    try {
-      new PublicKey(session.walletAddress);
-    } catch {
-      alert("Wallet inválida.");
-      return false;
-    }
+    const amt = Number(amount);
 
-    if (!session.secretKey || session.secretKey.length < 10) {
-      alert("Chave privada inválida.");
+    if (isNaN(amt) || amt <= 0) {
+      setError("Insira um valor válido.");
       return false;
     }
 
     return true;
   }
 
-  /* -----------------------------------------------------
-     OBTER COTAÇÃO
-  ----------------------------------------------------- */
+  /* ------------------------------------------
+     OBTÉM COTAÇÃO (HELIUS)
+  ------------------------------------------- */
   async function getQuote() {
-    if (!validateSession()) return;
-
-    const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0) {
-      setEstimated("");
+    if (!amount || Number(amount) <= 0) {
+      setQuoteInfo({});
       return;
     }
 
+    const amt = Number(amount);
+    const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
+    const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
+
+    const smallest =
+      token === "SOL"
+        ? Math.floor(amt * 1_000_000_000)
+        : Math.floor(amt * 1_000_000);
+
     try {
-      setStatus("Obtendo cotação...");
+      setIsGettingQuote(true);
 
-      const inputMint = direction === "SOL_TO_USDC" ? SOL_MINT : USDC_MINT;
-      const outputMint = direction === "SOL_TO_USDC" ? USDC_MINT : SOL_MINT;
+      const url = `https://quote.helius.xyz/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${smallest}&slippageBps=50`;
 
-      const amountInSmallestUnits = direction === "SOL_TO_USDC"
-        ? Math.floor(amt * LAMPORTS_PER_SOL)
-        : Math.floor(amt * Math.pow(10, USDC_DECIMALS));
-
-      const url = `${JUPITER_QUOTE_API}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountInSmallestUnits}&slippageBps=50`;
-      
-      const response = await robustFetch(url);
-      const data = await response.json();
-      
-      if (data.error) {
-        console.warn("Erro na cotação:", data.error);
-        setEstimated("");
-        setStatus("");
-        return;
-      }
+      const res = await fetch(url);
+      const data = await res.json();
 
       if (!data.outAmount) {
-        setEstimated("");
-        setStatus("");
+        setQuoteInfo({});
         return;
       }
 
-      let outputAmount: string;
-      if (direction === "SOL_TO_USDC") {
-        outputAmount = (Number(data.outAmount) / Math.pow(10, USDC_DECIMALS)).toFixed(4);
-        setEstimated(`${outputAmount} USDC`);
-      } else {
-        outputAmount = (Number(data.outAmount) / LAMPORTS_PER_SOL).toFixed(6);
-        setEstimated(`${outputAmount} SOL`);
-      }
+      const out =
+        token === "SOL"
+          ? (data.outAmount / 1_000_000).toFixed(2) // USDC
+          : (data.outAmount / 1_000_000_000).toFixed(6); // SOL
 
-      setStatus("Cotação obtida!");
-      
-      // Limpa o status após 2 segundos
-      setTimeout(() => setStatus(""), 2000);
+      const symbol = token === "SOL" ? "USDC" : "SOL";
 
-    } catch (err: any) {
-      console.error("Erro na cotação:", err);
-      setEstimated("");
-      setStatus("Erro ao obter cotação");
+      setQuoteInfo({
+        outAmount: `${out} ${symbol}`,
+        priceImpact: data.priceImpactPct
+          ? `${(data.priceImpactPct * 100).toFixed(2)}%`
+          : undefined,
+      });
+    } catch (err) {
+      console.error("Erro ao obter cotação:", err);
+      setQuoteInfo({});
+    } finally {
+      setIsGettingQuote(false);
     }
   }
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      getQuote();
-    }, 500);
+    const t = setTimeout(() => getQuote(), 500);
+    return () => clearTimeout(t);
+  }, [amount, token]);
 
-    return () => clearTimeout(timer);
-  }, [amount, direction]);
-
-  /* -----------------------------------------------------
-     EXECUTAR SWAP
-  ----------------------------------------------------- */
+  /* ------------------------------------------
+     HANDLE SWAP (HELIUS)
+  ------------------------------------------- */
   async function handleSwap() {
-    if (!validateSession()) return;
+    setError("");
 
-    const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0) {
-      alert("Insira um valor válido");
-      return;
-    }
+    if (!validateInputs()) return;
 
     setLoading(true);
-    setStatus("Iniciando swap...");
 
     try {
-      const inputMint = direction === "SOL_TO_USDC" ? SOL_MINT : USDC_MINT;
-      const outputMint = direction === "SOL_TO_USDC" ? USDC_MINT : SOL_MINT;
+      const amt = Number(amount);
+      const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
+      const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
 
-      const amountInSmallestUnits = direction === "SOL_TO_USDC"
-        ? Math.floor(amt * LAMPORTS_PER_SOL)
-        : Math.floor(amt * Math.pow(10, USDC_DECIMALS));
+      const smallest =
+        token === "SOL"
+          ? Math.floor(amt * 1_000_000_000)
+          : Math.floor(amt * 1_000_000);
 
-      setStatus("Obtendo cotação final...");
-      
-      // 1. Obter cotação
-      const quoteUrl = `${JUPITER_QUOTE_API}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountInSmallestUnits}&slippageBps=100`;
-      const quoteResponse = await robustFetch(quoteUrl);
-      
-      if (!quoteResponse.ok) {
-        throw new Error(`Falha na cotação: ${quoteResponse.status}`);
-      }
+      /* ---------------------------
+         1) OBTER COTAÇÃO
+      ---------------------------- */
+      const quoteUrl = `https://quote.helius.xyz/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${smallest}&slippageBps=50`;
 
-      const quoteData = await quoteResponse.json();
-      
-      if (quoteData.error) {
-        throw new Error(quoteData.error);
-      }
+      const quoteRes = await fetch(quoteUrl);
+      const quote = await quoteRes.json();
 
-      if (!quoteData.outAmount) {
-        throw new Error("Cotação inválida");
-      }
+      if (!quote.outAmount) throw new Error("Liquidez insuficiente.");
 
-      setStatus("Gerando transação...");
-      
-      // 2. Obter transação de swap
-      const swapResponse = await robustFetch(JUPITER_SWAP_API, {
+      /* ---------------------------
+         2) GERAR TRANSAÇÃO
+      ---------------------------- */
+      const swapRes = await fetch("https://quote.helius.xyz/swap/v1/swap", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          quoteResponse: quoteData,
-          userPublicKey: session!.walletAddress,
-          wrapAndUnwrapSol: true,
-          dynamicComputeUnitLimit: true,
-          useSharedAccounts: true,
+          userPublicKey: from,
+          quote: quote,
         }),
       });
 
-      const swapData = await swapResponse.json();
-      
-      if (swapData.error) {
-        throw new Error(swapData.error);
+      const swapJson = await swapRes.json();
+
+      if (!swapJson.swapTransaction) {
+        throw new Error("Erro ao gerar transação.");
       }
 
-      if (!swapData.swapTransaction) {
-        throw new Error("Transação não gerada");
-      }
+      /* ---------------------------
+         3) ASSINAR TRANSAÇÃO
+      ---------------------------- */
+      const txBuf = Buffer.from(swapJson.swapTransaction, "base64");
+      const tx = VersionedTransaction.deserialize(txBuf);
 
-      setStatus("Assinando transação...");
-      
-      // 3. Assinar transação
-      const keypair = parsePrivateKey(session!.secretKey);
-      const transactionBuffer = Buffer.from(swapData.swapTransaction, "base64");
-      const transaction = VersionedTransaction.deserialize(transactionBuffer);
-      transaction.sign([keypair]);
+      const user = parsePrivateKey(secretKey);
+      tx.sign([user]);
 
-      setStatus("Enviando para a blockchain...");
-      
-      // 4. Enviar transação
+      /* ---------------------------
+         4) ENVIAR PARA A REDE
+      ---------------------------- */
       const connection = new Connection(RPC_ENDPOINT, "confirmed");
-      const signature = await connection.sendRawTransaction(transaction.serialize(), {
+
+      const sig = await connection.sendRawTransaction(tx.serialize(), {
         skipPreflight: false,
-        preflightCommitment: "confirmed",
         maxRetries: 3,
       });
 
-      setStatus("Transação enviada! Confirmando...");
-      
-      // 5. Confirmação rápida
-      const confirmation = await connection.confirmTransaction(signature, "confirmed");
-      
-      if (confirmation.value.err) {
-        throw new Error("Transação falhou na confirmação");
-      }
+      alert(`Swap enviado!\nTX: ${sig}`);
 
-      // 6. Mostrar resultado
-      const outputAmount = direction === "SOL_TO_USDC"
-        ? (Number(quoteData.outAmount) / Math.pow(10, USDC_DECIMALS)).toFixed(4)
-        : (Number(quoteData.outAmount) / LAMPORTS_PER_SOL).toFixed(6);
-
-      const explorerUrl = `https://solscan.io/tx/${signature}`;
-      
-      setStatus("Swap realizado com sucesso!");
-      
-      const message = 
-        `✅ **Swap realizado com sucesso!**\n\n` +
-        `📤 **Enviado:** ${amt} ${direction === "SOL_TO_USDC" ? "SOL" : "USDC"}\n` +
-        `📥 **Recebido:** ${outputAmount} ${direction === "SOL_TO_USDC" ? "USDC" : "SOL"}\n\n` +
-        `🔗 **Transação confirmada!**\n\n` +
-        `Clique OK para abrir no explorador.`;
-
-      if (window.confirm(message)) {
-        window.open(explorerUrl, "_blank");
-      }
-
-      // Limpar
       setAmount("");
-      setEstimated("");
-      setStatus("");
-
+      setQuoteInfo({});
     } catch (err: any) {
-      console.error("❌ ERRO NO SWAP:", err);
-      
-      let errorMessage = "Erro ao processar swap";
-      
-      if (err.message.includes("insufficient funds")) {
-        errorMessage = "💰 Saldo insuficiente";
-      } else if (err.message.includes("timeout")) {
-        errorMessage = "⏱️ Tempo esgotado";
-      } else if (err.message.includes("network") || err.message.includes("fetch")) {
-        errorMessage = "🌐 Problema de rede/API. Tente novamente.";
-      } else if (err.message.includes("Blockhash")) {
-        errorMessage = "🔄 Transação expirada. Tente novamente";
-      } else if (err.message.includes("401")) {
-        errorMessage = "🔐 Problema de acesso à API. Usando endpoint alternativo...";
-      } else {
-        errorMessage = err.message || "Erro desconhecido";
-      }
-      
-      setStatus(`Erro: ${errorMessage}`);
-      alert(`❌ ${errorMessage}`);
+      console.error(err);
+      setError(err.message);
     } finally {
       setLoading(false);
-      setTimeout(() => setStatus(""), 5000);
     }
   }
 
-  /* -----------------------------------------------------
-     TESTAR CONEXÃO
-  ----------------------------------------------------- */
-  async function testConnection() {
-    try {
-      setStatus("Testando conexão com Jupiter API...");
-      
-      const testUrl = `${JUPITER_QUOTE_API}?inputMint=${SOL_MINT}&outputMint=${USDC_MINT}&amount=1000000`;
-      const response = await robustFetch(testUrl);
-      const data = await response.json();
-      
-      if (data.outAmount) {
-        alert(`✅ Conectado à Jupiter API!\n\nPreço: 1 SOL = ${(Number(data.outAmount) / 1000000).toFixed(2)} USDC`);
-        setStatus("Conexão OK!");
-      } else {
-        alert(`❌ Jupiter API respondeu com erro: ${data.error || "Desconhecido"}`);
-        setStatus("Erro na API");
-      }
-    } catch (err: any) {
-      alert(`❌ Falha na conexão: ${err.message}\n\nVerifique sua conexão com a internet.`);
-      setStatus("Falha na conexão");
-    } finally {
-      setTimeout(() => setStatus(""), 3000);
-    }
-  }
-
-  /* -----------------------------------------------------
-     RENDER
-  ----------------------------------------------------- */
+  /* ------------------------------------------
+     UI
+  ------------------------------------------- */
   return (
-    <S.Container>
+    <S.PageContainer>
       <S.NavBar>
         <button onClick={() => window.history.back()}>← Voltar</button>
-        <h2>Swap</h2>
+        <h2>Swap (Helius)</h2>
       </S.NavBar>
 
       <S.Box>
-        <h1>🔁 Swap SOL ↔ USDC</h1>
-        
-        {status && (
-          <div style={{
-            padding: "10px",
-            marginBottom: "15px",
-            borderRadius: "6px",
-            backgroundColor: status.includes("Erro") ? "#fef2f2" : 
-                           status.includes("sucesso") ? "#f0fdf4" : "#f0f9ff",
-            border: status.includes("Erro") ? "1px solid #fecaca" : 
-                    status.includes("sucesso") ? "1px solid #bbf7d0" : "1px solid #bae6fd",
-            color: status.includes("Erro") ? "#dc2626" : 
-                   status.includes("sucesso") ? "#15803d" : "#0369a1",
-            fontSize: "14px"
-          }}>
-            {status}
-          </div>
-        )}
+        <h2>Swap SOL ↔ USDC</h2>
 
-        <button
-          onClick={testConnection}
-          style={{
-            padding: "8px 16px",
-            marginBottom: "20px",
-            backgroundColor: "#f0f9ff",
-            border: "1px solid #0ea5e9",
-            borderRadius: "6px",
-            color: "#0369a1",
-            cursor: "pointer",
-            fontSize: "14px"
-          }}
-        >
-          🔍 Testar Conexão
-        </button>
-
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ fontSize: "14px", display: "block", marginBottom: "8px" }}>
-            Direção:
-          </label>
-          <select
-            value={direction}
-            onChange={(e) => {
-              setDirection(e.target.value as "SOL_TO_USDC" | "USDC_TO_SOL");
-              setEstimated("");
-            }}
+        {/* Carteira */}
+        <S.Field>
+          <label>Carteira</label>
+          <div
             style={{
-              width: "100%",
-              padding: "12px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              fontSize: "16px",
-              backgroundColor: "#fff",
+              padding: 10,
+              fontSize: 14,
+              background: "#f5f5f5",
+              color: "#333",
+              borderRadius: 6,
+              wordBreak: "break-all",
             }}
           >
-            <option value="SOL_TO_USDC">SOL → USDC</option>
-            <option value="USDC_TO_SOL">USDC → SOL</option>
-          </select>
-        </div>
-
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ fontSize: "14px", display: "block", marginBottom: "8px" }}>
-            Quantidade ({direction === "SOL_TO_USDC" ? "SOL" : "USDC"}):
-          </label>
-          <input
-            type="number"
-            placeholder={`Ex: ${direction === "SOL_TO_USDC" ? "0.1" : "10"}`}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            step="any"
-            min="0"
-            style={{
-              width: "100%",
-              padding: "12px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              fontSize: "16px",
-              boxSizing: "border-box"
-            }}
-          />
-          <div style={{ fontSize: "12px", marginTop: "5px", color: "#666" }}>
-            {direction === "SOL_TO_USDC" 
-              ? `Mínimo recomendado: 0.01 SOL`
-              : `Mínimo recomendado: 1 USDC`}
+            {from || "Nenhuma carteira conectada"}
           </div>
-        </div>
+        </S.Field>
 
-        {estimated && (
-          <div style={{
-            marginBottom: "20px",
-            padding: "15px",
-            borderRadius: "8px",
-            backgroundColor: "#f0fdf4",
-            border: "1px solid #bbf7d0"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "14px", color: "#15803d" }}>Você receberá:</span>
-              <span style={{ fontSize: "18px", fontWeight: "bold", color: "#15803d" }}>
-                {estimated}
-              </span>
-            </div>
+        {/* Token */}
+        <S.Field>
+          <label>Token para enviar</label>
+          <select
+            value={token}
+            onChange={(e) => {
+              setToken(e.target.value as "SOL" | "USDC");
+              setQuoteInfo({});
+            }}
+          >
+            <option value="SOL">SOL</option>
+            <option value="USDC">USDC</option>
+          </select>
+        </S.Field>
+
+        {/* Amount */}
+        <S.Field>
+          <label>Quantidade ({token})</label>
+          <input
+            value={amount}
+            onChange={(e) => {
+              const value = e.target.value.replace(",", ".");
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                setAmount(value);
+              }
+            }}
+            placeholder="0.1"
+          />
+        </S.Field>
+
+        {/* Quote info */}
+        {quoteInfo.outAmount && (
+          <div
+            style={{
+              background: "#e9ffe9",
+              padding: 12,
+              borderRadius: 6,
+              marginTop: 10,
+              border: "1px solid #bde5bd",
+            }}
+          >
+            <strong>Você receberá: </strong> {quoteInfo.outAmount}
           </div>
         )}
 
+        {/* Error */}
+        {error && (
+          <div
+            style={{
+              background: "#ffe5e5",
+              padding: 12,
+              borderRadius: 6,
+              color: "#900",
+              marginTop: 10,
+            }}
+          >
+            ❌ {error}
+          </div>
+        )}
+
+        {/* Swap button */}
         <button
           onClick={handleSwap}
-          disabled={loading || !amount || parseFloat(amount) <= 0}
+          disabled={loading}
           style={{
-            width: "100%",
-            padding: "15px",
-            borderRadius: "8px",
-            border: "none",
-            fontSize: "16px",
-            fontWeight: "bold",
-            backgroundColor: loading 
-              ? "#9ca3af" 
-              : (!amount || parseFloat(amount) <= 0) 
-                ? "#d1d5db" 
-                : "#3b82f6",
+            marginTop: 20,
+            padding: 14,
+            fontSize: 18,
+            background: loading ? "#888" : "#3b82f6",
+            borderRadius: 8,
             color: "white",
-            cursor: (!amount || parseFloat(amount) <= 0 || loading) 
-              ? "not-allowed" 
-              : "pointer",
-            transition: "background-color 0.2s"
+            cursor: "pointer",
           }}
         >
-          {loading ? "⏳ Processando..." : "🔁 Fazer Swap"}
+          {loading ? "Processando..." : "Fazer Swap"}
         </button>
-
-        <div style={{ marginTop: "25px", fontSize: "12px", color: "#6b7280" }}>
-          <div style={{ marginBottom: "8px" }}>
-            ⚡ <strong>Endpoint:</strong> quote-api.jup.ag/v6/ (público e confiável)
-          </div>
-          <div style={{ marginBottom: "8px" }}>
-            🔄 <strong>Fallback:</strong> Sistema automático de endpoints alternativos
-          </div>
-          <div>
-            💡 <strong>Dica:</strong> Comece com 0.01 SOL para testar
-          </div>
-        </div>
       </S.Box>
-    </S.Container>
+    </S.PageContainer>
   );
 }

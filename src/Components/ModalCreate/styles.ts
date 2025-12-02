@@ -11,25 +11,10 @@ export const Overlay = styled.div`
   background: #120720d0;
   backdrop-filter: blur(6px);
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 999;
-`;
-
-export const Description = styled.div`
-  width: 96%;
-  max-width: 600px;
-  font-weight: 200;
-  margin-bottom: 20px;
-
-  h2 {
-    font-size: 30px;
-  }
-  p {
-    padding-top: 10px;
-    opacity: 0.7;
-  }
+  padding: 16px; /* Permite respiração em telas pequenas */
 `;
 
 export const ModalContainer = styled.div<ModalProps>`
@@ -37,15 +22,30 @@ export const ModalContainer = styled.div<ModalProps>`
   border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   padding: 32px;
   border-radius: 16px;
-  max-width: 600px;
-  width: 96%;
-
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto; /* SCROLL NO CELULAR */
+  
   ${({ error }) =>
     error &&
     `
       border-color: #ff3b3b !important;
       animation: shake 0.3s ease;
     `
+  }
+
+  /* MOBILE */
+  @media (max-width: 480px) {
+    padding: 20px;
+    border-radius: 12px;
+
+    h2 {
+      font-size: 22px;
+    }
+    h3 {
+      font-size: 16px;
+    }
   }
 
   @keyframes shake {
@@ -66,31 +66,72 @@ export const Input = styled.input`
   background: #111;
   border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
   color: var(--foreground);
+
+  @media (max-width: 480px) {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
 `;
 
-export const SeedBox = styled.div`
-  background: #111;
-  border: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  color: var(--foreground);
-  font-size: 0.95rem;
-  line-height: 1.4;
-  word-break: break-word;
-  position: relative;
-  height: 200px;
+export const SeedHeader = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 10px;
 
   button {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    padding: 6px 10px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: var(--foreground);
     cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    @media (max-width: 480px) {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+  }
+`;
+
+export const SeedGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
+`;
+
+export const SeedWordBox = styled.div`
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 12px;
+  border-radius: 10px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--foreground);
+  font-size: 15px;
+
+  @media (max-width: 480px) {
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .index {
+    opacity: 0.7;
+  }
+
+  .word {
+    font-weight: 500;
   }
 `;
 
@@ -105,6 +146,10 @@ export const CheckRow = styled.div`
     font-size: 0.8rem;
     font-weight: 200;
     margin-top: -4px;
+
+    @media (max-width: 480px) {
+      font-size: 0.7rem;
+    }
   }
 `;
 
@@ -112,12 +157,20 @@ export const ErrorMsg = styled.div`
   color: #ff3b3b;
   font-size: 0.9rem;
   margin-bottom: 16px;
+
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+  }
 `;
 
 export const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 export const SecondaryButton = styled.button`
@@ -127,8 +180,23 @@ export const SecondaryButton = styled.button`
   color: var(--foreground);
   border-radius: 8px;
   cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    background: rgba(255,255,255,0.05);
+  }
+
+  @media (max-width: 480px) {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
 `;
 
 export const PrimaryButtonStyled = styled(PrimaryButton)`
   padding: 12px 20px;
+
+  @media (max-width: 480px) {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
 `;

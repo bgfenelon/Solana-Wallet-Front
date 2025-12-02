@@ -3,7 +3,7 @@ import { getJSON } from "../services/api";
 
 type SessionData = {
   walletAddress: string | null;
-  secretKey: string | null; // sempre base58
+  secretKey: string | null;
 };
 
 type AuthType = {
@@ -27,15 +27,12 @@ export function AuthProvider({ children }: any) {
   useEffect(() => {
     async function load() {
       try {
-        // ---------------------
-        // LOCAL STORAGE
-        // ---------------------
         const saved = localStorage.getItem("walletSession");
 
         if (saved) {
           const parsed = JSON.parse(saved);
 
-          if (typeof parsed.secretKey === "string") {
+          if (typeof parsed.secretKey === "string" && parsed.secretKey.length > 10) {
             setSession(parsed);
           } else {
             console.warn("Invalid secretKey in localStorage. Resetting.");
@@ -43,16 +40,13 @@ export function AuthProvider({ children }: any) {
           }
         }
 
-        // ---------------------
-        // REMOTE SESSION
-        // ---------------------
         const res = await getJSON("/session/me").catch(() => null);
 
-        if (res && res.ok && res.user) {
-          setSession({
+        if (res && res.ok && res.user && res.user.walletPubkey) {
+          setSession((prev) => ({
             walletAddress: res.user.walletPubkey,
-            secretKey: res.user.secretKey,
-          });
+            secretKey: prev?.secretKey || null,
+          }));
         }
       } catch (err) {
         console.error("Auth error:", err);

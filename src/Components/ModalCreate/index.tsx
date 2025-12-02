@@ -1,4 +1,3 @@
-// src/Components/ModalCreate/index.tsx
 import React, { useMemo, useState } from "react";
 import * as S from "./styles";
 import { PrimaryButton } from "../../styles";
@@ -21,10 +20,12 @@ export default function ModalCreate({ open, onClose }: Props) {
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showSeed, setShowSeed] = useState(false);
 
   const navigate = useNavigate();
   const { saveWallet } = useAuth();
 
+  // Gera carteira automaticamente quando modal abre
   const wallet = useMemo(() => {
     if (!open) return null;
 
@@ -37,7 +38,7 @@ export default function ModalCreate({ open, onClose }: Props) {
     return {
       mnemonic,
       publicKey: bs58.encode(kp.publicKey),
-      secretKey58: bs58.encode(kp.secretKey), // sempre base58
+      secretKey58: bs58.encode(kp.secretKey)
     };
   }, [open]);
 
@@ -58,16 +59,16 @@ export default function ModalCreate({ open, onClose }: Props) {
     setLoading(true);
 
     try {
-      // cadastrar no backend
+      // Envia para seu backend
       await postJSON("/auth/import", {
-        input: wallet.secretKey58,   // base58
-        name: name.trim(),
+        input: wallet.secretKey58,
+        name: name.trim()
       });
 
-      // salvar no sistema
+      // Salva no contexto
       saveWallet({
         walletAddress: wallet.publicKey,
-        secretKey: wallet.secretKey58, // base58
+        secretKey: wallet.secretKey58
       });
 
       onClose();
@@ -81,11 +82,10 @@ export default function ModalCreate({ open, onClose }: Props) {
 
   return (
     <S.Overlay>
-      <S.ModalContainer>
+      <S.ModalContainer error={!!error}>
         <h2>Create Wallet (Solana)</h2>
 
-        <h3>Seed Phrase</h3>
-
+        {/* Nome da carteira */}
         <S.Input
           placeholder="Wallet name..."
           value={name}
@@ -95,24 +95,46 @@ export default function ModalCreate({ open, onClose }: Props) {
           }}
         />
 
-        <S.SeedBox>
-          <p>{wallet.mnemonic}</p>
+        {/* Título da seed phrase */}
+        <h3>Your Seed Phrase</h3>
+
+        {/* Botões Show/Hide e Copy */}
+        <S.SeedHeader>
+          <button onClick={() => setShowSeed((s) => !s)}>
+            {showSeed ? "Hide" : "Show"}
+          </button>
           <button onClick={() => navigator.clipboard.writeText(wallet.mnemonic)}>
             Copy
           </button>
-        </S.SeedBox>
+        </S.SeedHeader>
 
+        {/* Grid com 12 palavras */}
+        <S.SeedGrid>
+          {wallet.mnemonic.split(" ").map((word, index) => (
+            <S.SeedWordBox key={index}>
+              <span className="index">{index + 1}.</span>
+              <span className="word">{showSeed ? word : "••••••"}</span>
+            </S.SeedWordBox>
+          ))}
+        </S.SeedGrid>
+
+        {/* Confirmação */}
         <S.CheckRow>
           <input
             type="checkbox"
             checked={confirmed}
             onChange={() => setConfirmed((s) => !s)}
           />
-          <label>I have saved my seed phrase</label>
+          <label>
+            I have written down my seed phrase and understand losing it means
+            losing access forever.
+          </label>
         </S.CheckRow>
 
+        {/* Mensagem de erro */}
         {error && <S.ErrorMsg>{error}</S.ErrorMsg>}
 
+        {/* Botões */}
         <S.Actions>
           <S.SecondaryButton onClick={onClose}>Cancel</S.SecondaryButton>
 
