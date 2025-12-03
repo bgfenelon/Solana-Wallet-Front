@@ -100,63 +100,71 @@ export default function SwapPage(): JSX.Element {
      IMPORTANT: send amount in UI units (e.g. 1.5), backend will convert
   ------------------------------------------- */
   async function getQuote() {
-    if (!amount || Number(amount) <= 0) {
+  if (!amount || Number(amount) <= 0) {
+    setQuoteInfo({});
+    return;
+  }
+
+  const amtUI = Number(amount);
+
+  try {
+    setIsGettingQuote(true);
+
+    const isSolToUsdc = token === "SOL"; // seu estado atual
+    const fromToken = isSolToUsdc ? "SOL" : "USDC";
+    const toToken = isSolToUsdc ? "USDC" : "SOL";
+
+    // Jupiter usa amount em unidades atômicas
+    const atomicAmount = isSolToUsdc
+      ? amtUI * 1_000_000_000 // SOL tem 9 decimais
+      : amtUI * 1_000_000;    // USDC tem 6 decimais
+
+    const res = await fetch(`${BACKEND_URL}/quote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: fromToken,
+        to: toToken,
+        amount: atomicAmount
+      }),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error("Quote backend error:", txt);
       setQuoteInfo({});
       return;
     }
 
-    const amtUI = Number(amount);
+    const data = await res.json();
 
-    try {
-      setIsGettingQuote(true);
-
-      const res = await fetch(`${BACKEND_URL}/quote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          carteiraUsuarioPublica: from,
-          carteiraUsuarioPrivada: secretKey,
-          amount: amtUI,
-          direction: buildDirection(),
-        }),
-      });
-
-      if (!res.ok) {
-        // show backend message for easier debugging
-        const txt = await res.text();
-        console.error("Quote backend error:", txt);
-        setQuoteInfo({});
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!data.outAmount) {
-        setQuoteInfo({});
-        return;
-      }
-
-      // data.outAmount is atomic (u6 for USDC, u9 for SOL) depending on route
-      const out =
-        token === "SOL"
-          ? (data.outAmount / 1_000_000).toFixed(2) // receiving USDC (6 decimals)
-          : (data.outAmount / 1_000_000_000).toFixed(6); // receiving SOL (9 decimals)
-
-      const symbol = token === "SOL" ? "USDC" : "SOL";
-
-      setQuoteInfo({
-        outAmount: `${out} ${symbol}`,
-        priceImpact: data.priceImpactPct
-          ? `${(data.priceImpactPct * 100).toFixed(2)}%`
-          : undefined,
-      });
-    } catch (err) {
-      console.error("Erro ao obter cotação:", err);
+    if (!data.outAmount) {
       setQuoteInfo({});
-    } finally {
-      setIsGettingQuote(false);
+      return;
     }
+
+    const out =
+      token === "SOL"
+        ? (data.outAmount / 1_000_000).toFixed(2) // USDC
+        : (data.outAmount / 1_000_000_000).toFixed(6); // SOL
+
+    const symbol = token === "SOL" ? "USDC" : "SOL";
+
+    setQuoteInfo({
+      outAmount: `${out} ${symbol}`,
+      priceImpact: data.priceImpactPct
+        ? `${(data.priceImpactPct * 100).toFixed(2)}%`
+        : undefined,
+    });
+
+  } catch (err) {
+    console.error("Erro ao obter cotação:", err);
+    setQuoteInfo({});
+  } finally {
+    setIsGettingQuote(false);
   }
+}
+
 
   useEffect(() => {
     const t = setTimeout(() => getQuote(), 500);
