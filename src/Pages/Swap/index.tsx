@@ -106,7 +106,7 @@ export default function SwapPage(): JSX.Element {
     try {
       setIsGettingQuote(true);
 
-      const res = await fetch(`${BACKEND_URL}/swap/quote`, {
+      const res = await fetch(`${BACKEND_URL}/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inputMint, outputMint, amount: smallest }),
@@ -168,7 +168,7 @@ export default function SwapPage(): JSX.Element {
       const smallest = token === "SOL" ? Math.floor(amt * 1_000_000_000) : Math.floor(amt * 1_000_000);
 
       // 1) GET QUOTE (optional double-check)
-      const quoteRes = await fetch(`${BACKEND_URL}/swap/quote`, {
+      const quoteRes = await fetch(`${BACKEND_URL}/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inputMint, outputMint, amount: smallest }),
