@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, JSX } from "react";
 import * as S from "./styles";
 
 import { useAuth } from "../../hooks/useAuth";
@@ -16,9 +16,21 @@ import bs58 from "bs58";
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
-const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
+const BACKEND_URL = process.env.VITE_BACKEND_URL || "https://node-veilfi-jtae.onrender.com";
+const RPC_ENDPOINT = process.env.VITE_RPC_ENDPOINT || "https://api.mainnet-beta.solana.com";
 
-export default function SwapPage() {
+/* ------------------------------------------
+   HELPERS
+------------------------------------------- */
+function base64ToUint8Array(base64: string) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+export default function SwapPage(): JSX.Element {
   const auth = useAuth();
 
   const [amount, setAmount] = useState("");
@@ -31,6 +43,7 @@ export default function SwapPage() {
     priceImpact?: string;
   }>({});
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGettingQuote, setIsGettingQuote] = useState(false);
 
   const from = auth?.session?.walletAddress || "";
@@ -45,6 +58,7 @@ export default function SwapPage() {
         return Keypair.fromSecretKey(new Uint8Array(JSON.parse(secretKey)));
       }
       return Keypair.fromSecretKey(bs58.decode(secretKey));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
     } catch (e: any) {
       throw new Error("Chave privada inválida.");
     }
@@ -74,7 +88,7 @@ export default function SwapPage() {
   }
 
   /* ------------------------------------------
-     OBTÉM COTAÇÃO (HELIUS)
+     OBTÉM COTAÇÃO (via BACKEND -> JUPITER)
   ------------------------------------------- */
   async function getQuote() {
     if (!amount || Number(amount) <= 0) {
@@ -86,17 +100,24 @@ export default function SwapPage() {
     const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
     const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
 
-    const smallest =
-      token === "SOL"
-        ? Math.floor(amt * 1_000_000_000)
-        : Math.floor(amt * 1_000_000);
+    // amount in atomic units
+    const smallest = token === "SOL" ? Math.floor(amt * 1_000_000_000) : Math.floor(amt * 1_000_000);
 
     try {
       setIsGettingQuote(true);
 
-      const url = `https://quote.helius.xyz/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${smallest}&slippageBps=50`;
+      const res = await fetch(`${BACKEND_URL}/swap/quote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inputMint, outputMint, amount: smallest }),
+      });
 
-      const res = await fetch(url);
+      if (!res.ok) {
+        console.error("Quote backend error:", await res.text());
+        setQuoteInfo({});
+        return;
+      }
+
       const data = await res.json();
 
       if (!data.outAmount) {
@@ -106,16 +127,14 @@ export default function SwapPage() {
 
       const out =
         token === "SOL"
-          ? (data.outAmount / 1_000_000).toFixed(2) // USDC
-          : (data.outAmount / 1_000_000_000).toFixed(6); // SOL
+          ? (data.outAmount / 1_000_000).toFixed(2)
+          : (data.outAmount / 1_000_000_000).toFixed(6);
 
       const symbol = token === "SOL" ? "USDC" : "SOL";
 
       setQuoteInfo({
         outAmount: `${out} ${symbol}`,
-        priceImpact: data.priceImpactPct
-          ? `${(data.priceImpactPct * 100).toFixed(2)}%`
-          : undefined,
+        priceImpact: data.priceImpactPct ? `${(data.priceImpactPct * 100).toFixed(2)}%` : undefined,
       });
     } catch (err) {
       console.error("Erro ao obter cotação:", err);
@@ -128,10 +147,11 @@ export default function SwapPage() {
   useEffect(() => {
     const t = setTimeout(() => getQuote(), 500);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, token]);
 
   /* ------------------------------------------
-     HANDLE SWAP (HELIUS)
+     HANDLE SWAP (JUPITER swap-in -> backend send)
   ------------------------------------------- */
   async function handleSwap() {
     setError("");
@@ -145,51 +165,41 @@ export default function SwapPage() {
       const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
       const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
 
-      const smallest =
-        token === "SOL"
-          ? Math.floor(amt * 1_000_000_000)
-          : Math.floor(amt * 1_000_000);
+      const smallest = token === "SOL" ? Math.floor(amt * 1_000_000_000) : Math.floor(amt * 1_000_000);
 
-      /* ---------------------------
-         1) OBTER COTAÇÃO
-      ---------------------------- */
-      const quoteUrl = `https://quote.helius.xyz/swap/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${smallest}&slippageBps=50`;
-
-      const quoteRes = await fetch(quoteUrl);
-      const quote = await quoteRes.json();
-
-      if (!quote.outAmount) throw new Error("Liquidez insuficiente.");
-
-      /* ---------------------------
-         2) GERAR TRANSAÇÃO
-      ---------------------------- */
-      const swapRes = await fetch("https://quote.helius.xyz/swap/v1/swap", {
+      // 1) GET QUOTE (optional double-check)
+      const quoteRes = await fetch(`${BACKEND_URL}/swap/quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userPublicKey: from,
-          quote: quote,
-        }),
+        body: JSON.stringify({ inputMint, outputMint, amount: smallest }),
+      });
+
+      const quote = await quoteRes.json();
+      if (!quote.outAmount) throw new Error("Liquidez insuficiente.");
+
+      // 2) REQUEST swapTransaction FROM JUPITER via backend
+      const swapRes = await fetch(`${BACKEND_URL}/swap/jupiter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userPublicKey: from, quote }),
       });
 
       const swapJson = await swapRes.json();
 
       if (!swapJson.swapTransaction) {
+        console.error("swap/jupiter returned:", swapJson);
         throw new Error("Erro ao gerar transação.");
       }
 
-      /* ---------------------------
-         3) ASSINAR TRANSAÇÃO
-      ---------------------------- */
-      const txBuf = Buffer.from(swapJson.swapTransaction, "base64");
-      const tx = VersionedTransaction.deserialize(txBuf);
+      // 3) SIGN locally
+      const txBuf = base64ToUint8Array(swapJson.swapTransaction);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tx = VersionedTransaction.deserialize(txBuf as any);
 
       const user = parsePrivateKey(secretKey);
       tx.sign([user]);
 
-      /* ---------------------------
-         4) ENVIAR PARA A REDE
-      ---------------------------- */
+      // 4) SEND to network
       const connection = new Connection(RPC_ENDPOINT, "confirmed");
 
       const sig = await connection.sendRawTransaction(tx.serialize(), {
@@ -201,9 +211,10 @@ export default function SwapPage() {
 
       setAmount("");
       setQuoteInfo({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
-      setError(err.message);
+      setError(err.message || "Erro no swap");
     } finally {
       setLoading(false);
     }
@@ -216,7 +227,7 @@ export default function SwapPage() {
     <S.PageContainer>
       <S.NavBar>
         <button onClick={() => window.history.back()}>← Voltar</button>
-        <h2>Swap (Helius)</h2>
+        <h2>Swap (Jupiter)</h2>
       </S.NavBar>
 
       <S.Box>
