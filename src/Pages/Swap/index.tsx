@@ -16,8 +16,8 @@ import bs58 from "bs58";
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
-const BACKEND_URL = process.env.VITE_BACKEND_URL || "https://node-veilfi-jtae.onrender.com";
-const RPC_ENDPOINT = process.env.VITE_RPC_ENDPOINT || "https://api.mainnet-beta.solana.com";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://node-veilfi-jtae.onrender.com";
+const RPC_ENDPOINT = import.meta.env.VITE_RPC_ENDPOINT || "https://api.mainnet-beta.solana.com";
 
 /* ------------------------------------------
    HELPERS
@@ -43,7 +43,6 @@ export default function SwapPage(): JSX.Element {
     priceImpact?: string;
   }>({});
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGettingQuote, setIsGettingQuote] = useState(false);
 
   const from = auth?.session?.walletAddress || "";
@@ -58,7 +57,6 @@ export default function SwapPage(): JSX.Element {
         return Keypair.fromSecretKey(new Uint8Array(JSON.parse(secretKey)));
       }
       return Keypair.fromSecretKey(bs58.decode(secretKey));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
     } catch (e: any) {
       throw new Error("Chave privada inválida.");
     }
@@ -78,7 +76,6 @@ export default function SwapPage(): JSX.Element {
     }
 
     const amt = Number(amount);
-
     if (isNaN(amt) || amt <= 0) {
       setError("Insira um valor válido.");
       return false;
@@ -100,8 +97,10 @@ export default function SwapPage(): JSX.Element {
     const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
     const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
 
-    // amount in atomic units
-    const smallest = token === "SOL" ? Math.floor(amt * 1_000_000_000) : Math.floor(amt * 1_000_000);
+    const smallest =
+      token === "SOL"
+        ? Math.floor(amt * 1_000_000_000)
+        : Math.floor(amt * 1_000_000);
 
     try {
       setIsGettingQuote(true);
@@ -109,7 +108,13 @@ export default function SwapPage(): JSX.Element {
       const res = await fetch(`${BACKEND_URL}/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputMint, outputMint, amount: smallest }),
+        body: JSON.stringify({
+          carteiraUsuarioPublica: from,
+          carteiraUsuarioPrivada: secretKey,
+          inputMint,
+          outputMint,
+          amount: smallest,
+        }),
       });
 
       if (!res.ok) {
@@ -134,7 +139,9 @@ export default function SwapPage(): JSX.Element {
 
       setQuoteInfo({
         outAmount: `${out} ${symbol}`,
-        priceImpact: data.priceImpactPct ? `${(data.priceImpactPct * 100).toFixed(2)}%` : undefined,
+        priceImpact: data.priceImpactPct
+          ? `${(data.priceImpactPct * 100).toFixed(2)}%`
+          : undefined,
       });
     } catch (err) {
       console.error("Erro ao obter cotação:", err);
@@ -147,7 +154,6 @@ export default function SwapPage(): JSX.Element {
   useEffect(() => {
     const t = setTimeout(() => getQuote(), 500);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, token]);
 
   /* ------------------------------------------
@@ -165,13 +171,22 @@ export default function SwapPage(): JSX.Element {
       const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
       const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
 
-      const smallest = token === "SOL" ? Math.floor(amt * 1_000_000_000) : Math.floor(amt * 1_000_000);
+      const smallest =
+        token === "SOL"
+          ? Math.floor(amt * 1_000_000_000)
+          : Math.floor(amt * 1_000_000);
 
-      // 1) GET QUOTE (optional double-check)
+      // 1) GET QUOTE
       const quoteRes = await fetch(`${BACKEND_URL}/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputMint, outputMint, amount: smallest }),
+        body: JSON.stringify({
+          carteiraUsuarioPublica: from,
+          carteiraUsuarioPrivada: secretKey,
+          inputMint,
+          outputMint,
+          amount: smallest,
+        }),
       });
 
       const quote = await quoteRes.json();
@@ -181,7 +196,11 @@ export default function SwapPage(): JSX.Element {
       const swapRes = await fetch(`${BACKEND_URL}/swap/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userPublicKey: from, quote }),
+        body: JSON.stringify({
+          carteiraUsuarioPublica: from,
+          carteiraUsuarioPrivada: secretKey,
+          quote,
+        }),
       });
 
       const swapJson = await swapRes.json();
@@ -193,7 +212,6 @@ export default function SwapPage(): JSX.Element {
 
       // 3) SIGN locally
       const txBuf = base64ToUint8Array(swapJson.swapTransaction);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tx = VersionedTransaction.deserialize(txBuf as any);
 
       const user = parsePrivateKey(secretKey);
@@ -211,7 +229,6 @@ export default function SwapPage(): JSX.Element {
 
       setAmount("");
       setQuoteInfo({});
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Erro no swap");
