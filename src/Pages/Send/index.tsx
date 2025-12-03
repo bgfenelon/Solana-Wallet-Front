@@ -3,11 +3,11 @@ import * as S from "./styles";
 import { useAuth } from "../../hooks/useAuth";
 import { Connection, PublicKey } from "@solana/web3.js";
 import Navbar from "../../Components/Navbar";
-import { ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff, RefreshCcw } from "lucide-react";
 import { postUserBalance } from "../../services/api";
 
 /* =====================================================
-   VALIDAÇÃO DE PUBLICKEY
+   PUBLIC KEY VALIDATION
 ===================================================== */
 function isValidPubKey(pk: any): boolean {
   try {
@@ -42,7 +42,7 @@ export default function SendPage() {
   const [token, setToken] = useState<"SOL" | "USDC">("SOL");
   const [error, setError] = useState("");
 
-  // 🔥 SALDOS BLOCKCHAIN
+  // 🔥 BLOCKCHAIN BALANCES
   const [solBalance, setSolBalance] = useState(0);
   const [usdcBalance, setUsdcBalance] = useState(0);
 
@@ -56,106 +56,115 @@ export default function SendPage() {
   /* =====================================================
      LOAD BALANCES (SOL + USDC)
   ===================================================== */
-  useEffect(() => {
+  async function loadBalances() {
     if (!from) return;
 
-    async function loadBalances() {
-      try {
-        const pubkey = new PublicKey(from);
+    try {
+      const pubkey = new PublicKey(from);
 
-        // SOL
-        const lamports = await connection.getBalance(pubkey);
-        setSolBalance(lamports / 1e9);
+      // SOL
+      const lamports = await connection.getBalance(pubkey);
+      setSolBalance(lamports / 1e9);
 
-        // USDC
-        const USDC_MINT = new PublicKey(
-          "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-        );
+      // USDC
+      const USDC_MINT = new PublicKey(
+        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      );
 
-        const tokenAcc = await connection.getParsedTokenAccountsByOwner(
-          pubkey,
-          { mint: USDC_MINT }
-        );
+      const tokenAcc = await connection.getParsedTokenAccountsByOwner(pubkey, {
+        mint: USDC_MINT,
+      });
 
-        if (tokenAcc.value.length === 0) {
-          setUsdcBalance(0);
-        } else {
-          const amt =
-            tokenAcc.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-          setUsdcBalance(amt || 0);
-        }
-      } catch (err) {
-        console.log("ERROR LOADING BALANCES:", err);
+      if (tokenAcc.value.length === 0) {
+        setUsdcBalance(0);
+      } else {
+        const amt =
+          tokenAcc.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+        setUsdcBalance(amt || 0);
       }
+    } catch (err) {
+      console.log("ERROR LOADING BALANCES:", err);
     }
+  }
 
+  useEffect(() => {
     loadBalances();
   }, [from]);
 
   /* =====================================================
        SOL (BACKEND)
   ===================================================== */
-  useEffect(() => {
-    async function fetchBalance() {
-      try {
-        if (!isValidPubKey(walletAddress)) {
-          setBalance(0);
-          setLoadingBalance(false);
-          return;
-        }
-
-        const res = await postUserBalance(walletAddress.trim());
-        setBalance(res.balance);
-      } catch (err) {
-        console.error("Error fetching balance:", err);
-      } finally {
+  async function loadBackendBalance() {
+    try {
+      if (!isValidPubKey(walletAddress)) {
+        setBalance(0);
         setLoadingBalance(false);
+        return;
       }
-    }
 
-    fetchBalance();
+      const res = await postUserBalance(walletAddress.trim());
+      setBalance(res.balance);
+    } catch (err) {
+      console.error("Error fetching balance:", err);
+    } finally {
+      setLoadingBalance(false);
+    }
+  }
+
+  useEffect(() => {
+    loadBackendBalance();
   }, [walletAddress]);
 
   /* =====================================================
        VEIL (BLOCKCHAIN)
   ===================================================== */
-  useEffect(() => {
-    async function loadVEIL() {
-      try {
-        if (!isValidPubKey(walletAddress)) {
-          setVeilBalance(0);
-          return;
-        }
+  async function loadVEIL() {
+    try {
+      if (!isValidPubKey(walletAddress)) {
+        setVeilBalance(0);
+        return;
+      }
 
-        const VEIL_MINT = new PublicKey(
-          "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump"
+      const VEIL_MINT = new PublicKey(
+        "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump"
+      );
+
+      const tokenAccounts =
+        await connection.getParsedTokenAccountsByOwner(
+          new PublicKey(walletAddress.trim()),
+          { mint: VEIL_MINT }
         );
 
-        const tokenAccounts =
-          await connection.getParsedTokenAccountsByOwner(
-            new PublicKey(walletAddress.trim()),
-            { mint: VEIL_MINT }
-          );
-
-        if (tokenAccounts.value.length === 0) {
-          setVeilBalance(0);
-          return;
-        }
-
-        const uiAmount =
-          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-
-        setVeilBalance(uiAmount || 0);
-      } catch (err) {
-        console.error("Erro carregando saldo VEIL:", err);
+      if (tokenAccounts.value.length === 0) {
+        setVeilBalance(0);
+        return;
       }
-    }
 
+      const uiAmount =
+        tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+
+      setVeilBalance(uiAmount || 0);
+    } catch (err) {
+      console.error("Erro carregando saldo VEIL:", err);
+    }
+  }
+
+  useEffect(() => {
     loadVEIL();
   }, [walletAddress]);
 
   /* =====================================================
-     BOTÕES 50% | MAX
+     RELOAD BUTTON
+  ===================================================== */
+  function reloadBalances() {
+    setLoadingBalance(true);
+    loadBalances();
+    loadBackendBalance();
+    loadVEIL();
+  }
+
+  /* =====================================================
+     50% | MAX BUTTONS
   ===================================================== */
   function handleQuickAmount(percent: 0.5 | 1) {
     const bal = token === "SOL" ? solBalance : usdcBalance;
@@ -208,13 +217,14 @@ export default function SendPage() {
       if (!res.ok) throw new Error(data.error || "Transaction failed.");
 
       alert("Transaction sent: " + data.signature);
+      setAmount("");
     } catch (err: any) {
       setError(err.message || "Unexpected error.");
     }
   }
 
   /* =====================================================
-     RENDER
+     UI
   ===================================================== */
   return (
     <>
@@ -234,15 +244,26 @@ export default function SendPage() {
                 <div className="subtitle">
                   Linked Account:{" "}
                   {walletAddress
-                    ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
+                    ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(
+                        -4
+                      )}`
                     : "No wallet connected"}
                 </div>
               </div>
             </div>
 
-            <S.PasswordVisibity onClick={() => setVisible(!visible)}>
-              {visible ? <Eye /> : <EyeOff />}
-            </S.PasswordVisibity>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={reloadBalances}
+                style={{ background: "transparent", border: "none" }}
+              >
+                <RefreshCcw size={18} />
+              </button>
+
+              <S.PasswordVisibity onClick={() => setVisible(!visible)}>
+                {visible ? <Eye /> : <EyeOff />}
+              </S.PasswordVisibity>
+            </div>
           </S.BalanceHeader>
 
           <S.BalanceValue>
