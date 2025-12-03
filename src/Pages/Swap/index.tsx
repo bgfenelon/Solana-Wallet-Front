@@ -165,6 +165,8 @@ export default function SwapPage(): JSX.Element {
 ------------------------------------------- */
 async function handleSwap() {
     setError("");
+    setSuccess("");
+
     if (!validateInputs()) return;
 
     setLoading(true);
