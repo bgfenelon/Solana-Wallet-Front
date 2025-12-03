@@ -38,6 +38,7 @@ export default function SwapPage(): JSX.Element {
   const [amount, setAmount] = useState("");
   const [token, setToken] = useState<"SOL" | "USDC">("SOL");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [quoteInfo, setQuoteInfo] = useState<{
@@ -204,11 +205,17 @@ async function handleSwap() {
 
         const swapJson = await swapRes.json();
 
-        if (!swapRes.ok || !swapJson.swapTransaction) {
+        if (swapRes.status === 200 || swapRes.status === 201) {
+            // Este alerta confirma que a requisição HTTP foi bem-sucedida.
+            // O backend ainda pode ter retornado um erro no corpo do JSON.
+            setSuccess("Swap completed!")
+        } else {
+            if (!swapRes.ok || !swapJson.swapTransaction) {
             // Captura erros do backend (como 'insufficient lamports' ou 'Failed to generate transaction')
             const errorMessage = swapJson.error || "Failed to generate swap transaction.";
             throw new Error(`Swap backend error: ${errorMessage}`);
-        }
+          }
+        }        
 
         // 3) Processar e Assinar a Transação V0
         let txBuf: Uint8Array;
@@ -248,8 +255,7 @@ async function handleSwap() {
         // Opcional: Adicionar espera por confirmação
         // await connection.confirmTransaction(sig, 'confirmed');
 
-        alert(`✅ Swap concluído!\nTransaction: ${sig}`);
-
+        console.log("Swap transaction signature:", sig);
         setAmount("");
         setQuoteInfo({});
     } catch (err: any) {
@@ -320,6 +326,10 @@ async function handleSwap() {
           {/* ERROR */}
           {error && <S.ErrorBox>❌ {error}</S.ErrorBox>}
 
+          {!success && (
+            <S.SucessBox>✅ {success}</S.SucessBox>
+          )}
+
           {/* BUTTON */}
           <S.SwapButton onClick={handleSwap} disabled={loading}>
             {loading ? "Processing..." : "Swap"}
@@ -329,7 +339,7 @@ async function handleSwap() {
         <S.IconContainer style={{ background: '#00c85333' }}><ShieldCheck stroke="#00c853"/></S.IconContainer>
         <div className="fontDiv">
           <h6> Trustless Exchange </h6>
-          <p>Your swap is executed directly on the blockchain without intermediaries</p>
+          <p>Your swap is executed directly on the blockchain without intermediaries</p> nn
         </div>
       </S.Card> <S.Card>
         <S.IconContainer style={{ background: '#7b75ff4d' }}><Shield stroke="#7b75ff" /></S.IconContainer>
