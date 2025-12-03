@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import {
   Connection,
   Keypair,
-  VersionedTransaction,
+  VersionedTransaction
 } from "@solana/web3.js";
 
 import bs58 from "bs58";
@@ -159,75 +159,107 @@ export default function SwapPage(): JSX.Element {
     return () => clearTimeout(t);
   }, [amount, token]);
 
-  /* ------------------------------------------
-     HANDLE SWAP
-  ------------------------------------------- */
-  async function handleSwap() {
+/* ------------------------------------------
+   HANDLE SWAP
+------------------------------------------- */
+async function handleSwap() {
     setError("");
     if (!validateInputs()) return;
 
     setLoading(true);
 
     try {
-      const amtUI = Number(amount);
+        const amtUI = Number(amount);
+        const connection = new Connection(RPC_ENDPOINT, "confirmed") as any; // Conexão inicializada
 
-      const quoteRes = await fetch(`${BACKEND_URL}/quote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          carteiraUsuarioPublica: from,
-          carteiraUsuarioPrivada: secretKey,
-          amount: amtUI,
-          direction: buildDirection(),
-        }),
-      });
+        // 1) Obter a Cotação (Quote)
+        const quoteRes = await fetch(`${BACKEND_URL}/quote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                carteiraUsuarioPublica: from,
+                carteiraUsuarioPrivada: secretKey,
+                amount: amtUI,
+                direction: buildDirection(),
+            }),
+        });
 
-      if (!quoteRes.ok) {
-        throw new Error("Failed to fetch quote");
-      }
+        const quote = await quoteRes.json();
+        if (!quoteRes.ok || !quote.outAmount) {
+            // Se o backend falhou ou não encontrou liquidez
+            const errorMessage = quote.error || "Failed to fetch quote or Insufficient liquidity.";
+            throw new Error(errorMessage);
+        }
 
-      const quote = await quoteRes.json();
-      if (!quote.outAmount) throw new Error("Insufficient liquidity.");
+        // 2) Requisitar Transação de Swap do Backend
+        const swapRes = await fetch(`${BACKEND_URL}/swap`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                carteiraUsuarioPublica: from,
+                carteiraUsuarioPrivada: secretKey,
+                quote,
+            }),
+        });
 
-      const swapRes = await fetch(`${BACKEND_URL}/swap`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          carteiraUsuarioPublica: from,
-          carteiraUsuarioPrivada: secretKey,
-          quote,
-        }),
-      });
+        const swapJson = await swapRes.json();
 
-      const swapJson = await swapRes.json();
+        if (!swapRes.ok || !swapJson.swapTransaction) {
+            // Captura erros do backend (como 'insufficient lamports' ou 'Failed to generate transaction')
+            const errorMessage = swapJson.error || "Failed to generate swap transaction.";
+            throw new Error(`Swap backend error: ${errorMessage}`);
+        }
 
-      if (!swapRes.ok || !swapJson.swapTransaction) {
-        throw new Error("Failed to generate transaction.");
-      }
+        // 3) Processar e Assinar a Transação V0
+        let txBuf: Uint8Array;
+        try {
+            // Tratamento de erro robusto para Base64 (incluindo URL-safe e padding)
+            let base64 = swapJson.swapTransaction;
+            base64 = base64.replace(/-/g, '+').replace(/_/g, '/'); // URL-safe
+            while (base64.length % 4) {
+                base64 += '='; // Padding
+            }
+            txBuf = base64ToUint8Array(base64);
 
-      const txBuf = base64ToUint8Array(swapJson.swapTransaction);
-      const tx = VersionedTransaction.deserialize(txBuf as any);
+        } catch (e) {
+            console.error("Base64 decoding failed:", e);
+            throw new Error("Invalid swap transaction format (Base64 decode error).");
+        }
+        
+        const tx = VersionedTransaction.deserialize(txBuf) as any; // Usando txBuf (Uint8Array)
+        
+        // 🚨 CORREÇÃO PRINCIPAL: Resolver Address Lookup Tables (ALTs)
+        if (tx.version === 0 && tx.addressTableLookups && tx.addressTableLookups.length > 0) {
+            console.log("Resolvendo Address Lookup Tables (ALTs)...");
+            // Esta função busca os endereços de conta compactados
+            await connection.fetchLookupTableAddresses(tx.addressTableLookups); 
+            console.log("ALTs resolvidas com sucesso.");
+        }
+        
+        const user = parsePrivateKey(secretKey);
+        tx.sign([user]);
 
-      const user = parsePrivateKey(secretKey);
-      tx.sign([user]);
+        // 4) Enviar e Confirmar a Transação
+        const sig = await connection.sendRawTransaction(tx.serialize(), {
+            skipPreflight: false,
+            maxRetries: 3,
+        });
 
-      const connection = new Connection(RPC_ENDPOINT, "confirmed");
-      const sig = await connection.sendRawTransaction(tx.serialize(), {
-        skipPreflight: false,
-        maxRetries: 3,
-      });
+        // Opcional: Adicionar espera por confirmação
+        // await connection.confirmTransaction(sig, 'confirmed');
 
-      alert(`✅ Swap sent!\nTransaction: ${sig}`);
+        alert(`✅ Swap concluído!\nTransaction: ${sig}`);
 
-      setAmount("");
-      setQuoteInfo({});
+        setAmount("");
+        setQuoteInfo({});
     } catch (err: any) {
-      console.error("Swap error:", err);
-      setError(err.message || "Unexpected error.");
+        console.error("Swap error:", err);
+        // Exibe a mensagem de erro específica, incluindo aquelas do backend
+        setError(err.message || "Erro inesperado ao realizar o Swap.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }
+}
 
   /* ------------------------------------------
      UI
