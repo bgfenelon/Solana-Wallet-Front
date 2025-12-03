@@ -66,6 +66,8 @@ export default function SwapPage(): JSX.Element {
      INPUT VALIDATION
   ------------------------------------------- */
   function validateInputs() {
+    setError("");
+
     if (!from) {
       setError("Carteira não conectada.");
       return false;
@@ -85,7 +87,15 @@ export default function SwapPage(): JSX.Element {
   }
 
   /* ------------------------------------------
+     HELP: direction que o backend espera
+  ------------------------------------------- */
+  function buildDirection(): "SOL_TO_USDC" | "USDC_TO_SOL" {
+    return token === "SOL" ? "SOL_TO_USDC" : "USDC_TO_SOL";
+  }
+
+  /* ------------------------------------------
      OBTÉM COTAÇÃO (via BACKEND -> JUPITER)
+     IMPORTANT: send amount in UI units (e.g. 1.5), backend will convert
   ------------------------------------------- */
   async function getQuote() {
     if (!amount || Number(amount) <= 0) {
@@ -93,14 +103,7 @@ export default function SwapPage(): JSX.Element {
       return;
     }
 
-    const amt = Number(amount);
-    const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
-    const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
-
-    const smallest =
-      token === "SOL"
-        ? Math.floor(amt * 1_000_000_000)
-        : Math.floor(amt * 1_000_000);
+    const amtUI = Number(amount);
 
     try {
       setIsGettingQuote(true);
@@ -111,14 +114,15 @@ export default function SwapPage(): JSX.Element {
         body: JSON.stringify({
           carteiraUsuarioPublica: from,
           carteiraUsuarioPrivada: secretKey,
-          inputMint,
-          outputMint,
-          amount: smallest,
+          amount: amtUI,
+          direction: buildDirection(),
         }),
       });
 
       if (!res.ok) {
-        console.error("Quote backend error:", await res.text());
+        // show backend message for easier debugging
+        const txt = await res.text();
+        console.error("Quote backend error:", txt);
         setQuoteInfo({});
         return;
       }
@@ -130,10 +134,11 @@ export default function SwapPage(): JSX.Element {
         return;
       }
 
+      // data.outAmount is atomic (u6 for USDC, u9 for SOL) depending on route
       const out =
         token === "SOL"
-          ? (data.outAmount / 1_000_000).toFixed(2)
-          : (data.outAmount / 1_000_000_000).toFixed(6);
+          ? (data.outAmount / 1_000_000).toFixed(2) // receiving USDC (6 decimals)
+          : (data.outAmount / 1_000_000_000).toFixed(6); // receiving SOL (9 decimals)
 
       const symbol = token === "SOL" ? "USDC" : "SOL";
 
@@ -154,45 +159,44 @@ export default function SwapPage(): JSX.Element {
   useEffect(() => {
     const t = setTimeout(() => getQuote(), 500);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, token]);
 
   /* ------------------------------------------
-     HANDLE SWAP (JUPITER swap-in -> backend send)
+     HANDLE SWAP (backend builds swap tx via Jupiter, front signs and sends)
+     Note: we send amount in UI units (e.g. 1.5) — backend will convert
   ------------------------------------------- */
   async function handleSwap() {
     setError("");
-
     if (!validateInputs()) return;
 
     setLoading(true);
 
     try {
-      const amt = Number(amount);
-      const inputMint = token === "SOL" ? SOL_MINT : USDC_MINT;
-      const outputMint = token === "SOL" ? USDC_MINT : SOL_MINT;
+      const amtUI = Number(amount);
 
-      const smallest =
-        token === "SOL"
-          ? Math.floor(amt * 1_000_000_000)
-          : Math.floor(amt * 1_000_000);
-
-      // 1) GET QUOTE
+      // 1) GET QUOTE (via backend)
       const quoteRes = await fetch(`${BACKEND_URL}/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           carteiraUsuarioPublica: from,
           carteiraUsuarioPrivada: secretKey,
-          inputMint,
-          outputMint,
-          amount: smallest,
+          amount: amtUI,
+          direction: buildDirection(),
         }),
       });
+
+      if (!quoteRes.ok) {
+        const txt = await quoteRes.text();
+        console.error("Quote backend error:", txt);
+        throw new Error("Erro ao obter cotação");
+      }
 
       const quote = await quoteRes.json();
       if (!quote.outAmount) throw new Error("Liquidez insuficiente.");
 
-      // 2) REQUEST swapTransaction FROM JUPITER via backend
+      // 2) Request swap transaction from backend (backend will call Jupiter /swap and return swapTransaction base64)
       const swapRes = await fetch(`${BACKEND_URL}/swap/jupiter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,8 +207,13 @@ export default function SwapPage(): JSX.Element {
         }),
       });
 
-      const swapJson = await swapRes.json();
+      if (!swapRes.ok) {
+        const txt = await swapRes.text();
+        console.error("Swap backend error:", txt);
+        throw new Error("Erro ao gerar transação no backend");
+      }
 
+      const swapJson = await swapRes.json();
       if (!swapJson.swapTransaction) {
         console.error("swap/jupiter returned:", swapJson);
         throw new Error("Erro ao gerar transação.");
@@ -219,7 +228,6 @@ export default function SwapPage(): JSX.Element {
 
       // 4) SEND to network
       const connection = new Connection(RPC_ENDPOINT, "confirmed");
-
       const sig = await connection.sendRawTransaction(tx.serialize(), {
         skipPreflight: false,
         maxRetries: 3,
@@ -309,6 +317,9 @@ export default function SwapPage(): JSX.Element {
             }}
           >
             <strong>Você receberá: </strong> {quoteInfo.outAmount}
+            {quoteInfo.priceImpact && (
+              <div style={{ marginTop: 6, fontSize: 13 }}>Impacto: {quoteInfo.priceImpact}</div>
+            )}
           </div>
         )}
 
