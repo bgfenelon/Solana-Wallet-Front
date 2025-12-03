@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as S from "./styles";
 import QRCode from "react-qr-code";
 import { useAuth } from "../../context/Auth";
+import { Coins, Copy, HandCoins, Shield } from "lucide-react";
+import Navbar from "../../Components/Navbar";
 
 /**
  * Deposit Page completo
@@ -82,6 +84,9 @@ function postJSON(path: string, body: any) {
 }
 
 export default function DepositPage(): React.ReactElement {
+
+  const [coin, setCoin] = useState<"SOL" | "VEIL">("SOL")
+
   const { session, loading: authLoading } = useAuth();
 
   const walletAddress = session?.walletAddress ?? null;
@@ -177,43 +182,58 @@ export default function DepositPage(): React.ReactElement {
   }
 
   return (
+    <><Navbar name="Deposit" />
     <S.PageContainer>
-      <S.NavBar>
-        <button onClick={() => window.history.back()}>← Back</button>
-        <h2>Deposit</h2>
-        <h2></h2>
-      </S.NavBar>
-
       <S.Box>
-        <h1>Deposit</h1>
-        <p>Send SOL to your personal wallet address:</p>
+        <p style={{ textAlign: "left", fontSize: "14px", fontWeight: "700" }}>Select your Wallet</p>
+        <S.ButtonContainer>
+          <S.CoinButton className={coin == "SOL" ? "selected" : ""} onClick={() => setCoin("SOL")}><Coins /> SOL</S.CoinButton>
+          <S.CoinButton className={coin == "VEIL" ? "selected" : ""} onClick={() => setCoin("VEIL")}><Coins /> VEIL</S.CoinButton>
+        </S.ButtonContainer>
+        {coin == "SOL" ? (
+          <>
+            <S.QrWrapper>
+              <S.QRCodeStyled value={walletAddress} />
+            </S.QrWrapper>
 
-        <S.QrWrapper>
-          <S.QRCodeStyled value={walletAddress} size={180} />
-        </S.QrWrapper>
+            <S.CopyRow>
+              <S.AddrBox>{walletAddress}</S.AddrBox>
+              <S.CopyButton className="copy" onClick={handleCopy}>
+                {clicked ? "Copied!" : (
+                  <>
+                    <Copy className="copy-icon" />
+                    Copy
+                  </>
+                )}
+              </S.CopyButton>
+            </S.CopyRow>
+          </>
+        ) : (
+          <>
+            <S.ComingSoon>
 
-        <S.AddrBox>{walletAddress}</S.AddrBox>
+              <S.ComingSoonTitle>Coming Soon</S.ComingSoonTitle>
+              <S.CopyRow>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            justifyContent: "center",
-            marginTop: 12,
-          }}
-        >
-          <button className="copy" onClick={handleCopy}>
-            {clicked ? "Copied!" : "Copy Address"}
-          </button>
-        </div>
-
-        <h3 style={{ marginTop: 20 }}>
-          Balance:{" "}
-          <strong>
-            {balance !== null ? balance.toFixed(4) + " SOL" : "Loading..."}
-          </strong>
-        </h3>
+              </S.CopyRow>
+            </S.ComingSoon>
+          </>
+        )}
       </S.Box>
-    </S.PageContainer>
+      <S.Card>
+        <S.IconContainer style={{ background: '#7b75ff4d' }}><Shield stroke="#7b75ff" /></S.IconContainer>
+        <div className="fontDiv">
+          <h6> Private Wallet </h6>
+          <p>Deposits automatically transfer to your private wallet</p>
+        </div>
+      </S.Card>
+      <S.Card>
+        <S.IconContainer style={{ background: '#008f4a4d' }}><HandCoins stroke="green" /></S.IconContainer>
+        <div className="fontDiv">
+          <h6>Auto-Transfer</h6>
+          <p>Deposits are credited quickly after confirmation.</p>
+        </div>
+      </S.Card>
+    </S.PageContainer></>
   );
 }

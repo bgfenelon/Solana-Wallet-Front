@@ -2,21 +2,56 @@ import React, { useState, useEffect } from "react";
 import * as S from "./styles";
 import { useAuth } from "../../hooks/useAuth";
 import { Connection, PublicKey } from "@solana/web3.js";
+import Navbar from "../../Components/Navbar";
+import { ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { postUserBalance } from "../../services/api";
+
+/* =====================================================
+   VALIDAÇÃO DE PUBLICKEY
+===================================================== */
+function isValidPubKey(pk: any): boolean {
+  try {
+    if (!pk) return false;
+    if (typeof pk !== "string") return false;
+
+    const clean = pk.trim();
+    if (clean.length < 32 || clean.length > 50) return false;
+
+    new PublicKey(clean);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default function SendPage() {
   const auth = useAuth();
+  const { session } = useAuth();
+
+  const walletAddress = session?.walletAddress ?? null;
 
   const [to, setTo] = useState("");
+  const [visible, setVisible] = useState(true);
+
+  const [balance, setBalance] = useState<number | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState(true);
+
+  const [veilBalance, setVeilBalance] = useState(0);
+
   const [amount, setAmount] = useState("");
   const [token, setToken] = useState<"SOL" | "USDC">("SOL");
   const [error, setError] = useState("");
 
-  // 🔥 BALANCES
+  // 🔥 SALDOS BLOCKCHAIN
   const [solBalance, setSolBalance] = useState(0);
   const [usdcBalance, setUsdcBalance] = useState(0);
 
   const from = auth?.session?.walletAddress || "";
   const secretKey = auth?.session?.secretKey || "";
+
+  const connection = new Connection(
+    "https://mainnet.helius-rpc.com/?api-key=1581ae46-832d-4d46-bc0c-007c6269d2d9"
+  );
 
   /* =====================================================
      LOAD BALANCES (SOL + USDC)
@@ -24,19 +59,15 @@ export default function SendPage() {
   useEffect(() => {
     if (!from) return;
 
-    const connection = new Connection(
-      "https://mainnet.helius-rpc.com/?api-key=1581ae46-832d-4d46-bc0c-007c6269d2d9"
-    );
-
     async function loadBalances() {
       try {
         const pubkey = new PublicKey(from);
 
-        // SOL BALANCE
+        // SOL
         const lamports = await connection.getBalance(pubkey);
         setSolBalance(lamports / 1e9);
 
-        // USDC BALANCE
+        // USDC
         const USDC_MINT = new PublicKey(
           "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         );
@@ -62,27 +93,91 @@ export default function SendPage() {
   }, [from]);
 
   /* =====================================================
-     SEND FUNCTION — WITH IMPROVED FEEDBACK
+       SOL (BACKEND)
+  ===================================================== */
+  useEffect(() => {
+    async function fetchBalance() {
+      try {
+        if (!isValidPubKey(walletAddress)) {
+          setBalance(0);
+          setLoadingBalance(false);
+          return;
+        }
+
+        const res = await postUserBalance(walletAddress.trim());
+        setBalance(res.balance);
+      } catch (err) {
+        console.error("Error fetching balance:", err);
+      } finally {
+        setLoadingBalance(false);
+      }
+    }
+
+    fetchBalance();
+  }, [walletAddress]);
+
+  /* =====================================================
+       VEIL (BLOCKCHAIN)
+  ===================================================== */
+  useEffect(() => {
+    async function loadVEIL() {
+      try {
+        if (!isValidPubKey(walletAddress)) {
+          setVeilBalance(0);
+          return;
+        }
+
+        const VEIL_MINT = new PublicKey(
+          "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump"
+        );
+
+        const tokenAccounts =
+          await connection.getParsedTokenAccountsByOwner(
+            new PublicKey(walletAddress.trim()),
+            { mint: VEIL_MINT }
+          );
+
+        if (tokenAccounts.value.length === 0) {
+          setVeilBalance(0);
+          return;
+        }
+
+        const uiAmount =
+          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+
+        setVeilBalance(uiAmount || 0);
+      } catch (err) {
+        console.error("Erro carregando saldo VEIL:", err);
+      }
+    }
+
+    loadVEIL();
+  }, [walletAddress]);
+
+  /* =====================================================
+     BOTÕES 50% | MAX
+  ===================================================== */
+  function handleQuickAmount(percent: 0.5 | 1) {
+    const bal = token === "SOL" ? solBalance : usdcBalance;
+    const value = percent === 1 ? bal : bal * 0.5;
+    setAmount(value.toString());
+  }
+
+  /* =====================================================
+     SEND FUNCTION
   ===================================================== */
   async function handleSend() {
     setError("");
 
-    if (!secretKey || !from) {
-      return setError("Wallet not loaded.");
-    }
-
+    if (!secretKey || !from) return setError("Wallet not loaded.");
     if (!to) return setError("Invalid address.");
     if (!amount) return setError("Enter an amount.");
 
     const amt = Number(amount);
     if (isNaN(amt) || amt <= 0) return setError("Invalid amount.");
 
-    // ===============================
-    // BALANCE CHECKS
-    // ===============================
     if (token === "SOL") {
-      const fee = 0.00001; // safe network fee estimate
-
+      const fee = 0.00001;
       if (amt + fee > solBalance) {
         return setError("Insufficient SOL. Leave some SOL for network fees.");
       }
@@ -94,7 +189,6 @@ export default function SendPage() {
       }
     }
 
-    // API REQUEST
     try {
       const res = await fetch(
         "https://node-veilfi-jtae.onrender.com/wallet/send",
@@ -120,124 +214,119 @@ export default function SendPage() {
   }
 
   /* =====================================================
-     BALANCE BOX UI
-  ===================================================== */
-  function renderBalanceBox() {
-    const balance = token === "SOL" ? solBalance : usdcBalance;
-
-    const formatted =
-      token === "SOL"
-        ? balance.toFixed(4) + " SOL"
-        : balance.toFixed(2) + " USDC";
-
-    return (
-      <div
-        style={{
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(157,78,221,0.35)",
-          padding: "12px",
-          borderRadius: "12px",
-          marginBottom: "10px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          color: "white",
-          fontSize: "15px",
-        }}
-      >
-        <span>{formatted}</span>
-
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            style={{
-              padding: "6px 10px",
-              background: "rgba(157,78,221,0.25)",
-              borderRadius: "8px",
-              border: "1px solid rgba(157,78,221,0.4)",
-              color: "white",
-              cursor: "pointer",
-            }}
-            onClick={() => setAmount((balance * 0.5).toString())}
-          >
-            50%
-          </button>
-
-          <button
-            style={{
-              padding: "6px 10px",
-              background: "rgba(157,78,221,0.25)",
-              borderRadius: "8px",
-              border: "1px solid rgba(157,78,221,0.4)",
-              color: "white",
-              cursor: "pointer",
-            }}
-            onClick={() => setAmount(balance.toString())}
-          >
-            100%
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* =====================================================
      RENDER
   ===================================================== */
   return (
-    <S.PageContainer>
-      <S.NavBar>
-        <button onClick={() => window.history.back()}>← Back</button>
-        <h2>Send</h2>
-        <h2></h2>
-      </S.NavBar>
+    <>
+      <Navbar name="Send" />
 
-      <S.Box>
-        <h2>Send</h2>
+      <S.PageContainer>
+        {/* BALANCE CARD */}
+        <S.BalanceCard>
+          <S.BalanceHeader>
+            <div className="left">
+              <div className="iconBox">
+                <ShieldCheck />
+              </div>
 
-        <S.Field>
-          <label>From</label>
-          <S.From className="mono">{from}</S.From>
-        </S.Field>
+              <div>
+                <div className="title">Available Balance</div>
+                <div className="subtitle">
+                  Linked Account:{" "}
+                  {walletAddress
+                    ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
+                    : "No wallet connected"}
+                </div>
+              </div>
+            </div>
 
-        <S.Field>
-          <label>Destination</label>
-          <input value={to} onChange={(e) => setTo(e.target.value)} />
-        </S.Field>
+            <S.PasswordVisibity onClick={() => setVisible(!visible)}>
+              {visible ? <Eye /> : <EyeOff />}
+            </S.PasswordVisibity>
+          </S.BalanceHeader>
 
-        <S.Field>
-          <label>Token</label>
-          <select
-            value={token}
-            onChange={(e) => setToken(e.target.value as any)}
-          >
-            <option value="SOL">SOL</option>
-            <option value="USDC">USDC</option>
-          </select>
-        </S.Field>
+          <S.BalanceValue>
+            {visible
+              ? loadingBalance
+                ? "Loading..."
+                : balance !== null
+                ? balance.toFixed(4)
+                : "0.0000"
+              : "............"}
+            <span className="currency"> SOL</span>
+          </S.BalanceValue>
 
-        <S.Field>
-          <label>Amount ({token})</label>
+          <S.TokenMiniRow>
+            <div className="tokenBox">
+              <img
+                src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+                alt="usdc"
+              />
+              <span>{usdcBalance.toFixed(2)} USDC</span>
+            </div>
 
-          {renderBalanceBox()}
+            <div className="tokenBox">
+              <img
+                src="https://cryptologos.cc/logos/solana-sol-logo.png"
+                alt="veil"
+              />
+              <span>{veilBalance.toFixed(2)} VEIL</span>
+            </div>
+          </S.TokenMiniRow>
+        </S.BalanceCard>
 
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(",", "."))}
-          />
-        </S.Field>
+        {/* FORM */}
+        <S.Box>
+          <S.Field>
+            <label>Destination</label>
+            <input value={to} onChange={(e) => setTo(e.target.value)} />
+          </S.Field>
 
-        {token !== "SOL" && (
-          <p style={{ marginTop: 5, opacity: 0.8 }}>
-            ⚠ USDC transfers require a small amount of SOL for fees.
-          </p>
-        )}
+          <S.Field>
+            <label>Token</label>
+            <select
+              value={token}
+              onChange={(e) => setToken(e.target.value as any)}
+            >
+              <option value="SOL">SOL</option>
+              <option value="USDC">USDC</option>
+            </select>
+          </S.Field>
 
-        {error && (
-          <div style={{ color: "red", marginBottom: 10 }}>{error}</div>
-        )}
+          <S.Field>
+            <label>Amount ({token})</label>
 
-        <button onClick={handleSend}>Send</button>
-      </S.Box>
-    </S.PageContainer>
+            <S.AmountRow>
+              <input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value.replace(",", "."))}
+                placeholder={`0.00 ${token}`}
+              />
+
+              <div className="quick-actions">
+                <button type="button" onClick={() => handleQuickAmount(0.5)}>
+                  50%
+                </button>
+                <button type="button" onClick={() => handleQuickAmount(1)}>
+                  MAX
+                </button>
+              </div>
+            </S.AmountRow>
+          </S.Field>
+
+          {token !== "SOL" && (
+            <p style={{ marginTop: 5, opacity: 0.8 }}>
+              ⚠ USDC transfers require a small amount of SOL for fees.
+            </p>
+          )}
+
+          {error && (
+            <div style={{ color: "red", marginBottom: 10 }}>{error}</div>
+          )}
+
+          <S.SendButton onClick={handleSend}>Send</S.SendButton>
+        </S.Box>
+      </S.PageContainer>
+    </>
   );
 }

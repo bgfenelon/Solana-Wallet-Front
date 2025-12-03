@@ -22,7 +22,7 @@ export const MainHeroContent = styled.section`
   background: linear-gradient(135deg, #000000 0%, #360b69ff 50%, #000000 100%);
 
   img {
-    width: 150px;
+    width: 100px;
     transition: 0.3s ease;
   }
 
@@ -122,28 +122,7 @@ export const MainHeroContent = styled.section`
 /* ================================
    GRID DO BACKGROUND
 ================================ */
-export const BackgroundGrid = styled.div`
-  position: absolute;
-  inset: 0;
-  opacity: 0.2;
 
-  > div {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    inset: 0;
-
-    background-image: linear-gradient(
-        rgba(157, 78, 221, 0.1) 1px,
-        transparent 1px
-      ),
-      linear-gradient(90deg, rgba(157, 78, 221, 0.1) 1px, transparent 1px);
-
-    @media (max-width: 480px) {
-      background-size: 35px 35px;
-    }
-  }
-`;
 
 /* ================================
    HERO INNER

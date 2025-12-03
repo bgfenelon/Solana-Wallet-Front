@@ -10,8 +10,8 @@ import pumpf from "../../pumpFun.jpg"
 
 export function Hero() {
     const [copied, setCopied] = useState(false);
-      const [openCreate, setOpenCreate] = useState(false);
-  const [openImport, setOpenImport] = useState(false);
+    const [openCreate, setOpenCreate] = useState(false);
+    const [openImport, setOpenImport] = useState(false);
 
 
   const copyToClipboard = async () => {
@@ -39,19 +39,10 @@ export function Hero() {
 
   return (
     <>
-      {/* Renderização condicional dos modais */}
-      {openCreate && (
         <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
-      )}
-
-      {openImport && (
         <ModalImport open={openImport} onClose={() => setOpenImport(false)} />
-      )}
 
       <S.MainHeroContent>
-        <S.BackgroundGrid>
-          <div />
-        </S.BackgroundGrid>
 
         <S.HeroInner>
 
