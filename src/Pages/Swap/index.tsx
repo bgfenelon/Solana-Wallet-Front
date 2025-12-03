@@ -231,12 +231,14 @@ export default function SwapPage(): JSX.Element {
 
         if (!swapRes.ok) {
           const txt = await swapRes.text();
+          setError("Erro ao gerar transação");
           console.error("Swap backend error:", txt);
           throw new Error("Erro ao gerar transação no backend");
         }
 
         const swapJson = await swapRes.json();
         if (!swapJson.swapTransaction) {
+          setError("Erro ao gerar transação.");
           console.error("swap/jupiter returned:", swapJson);
           throw new Error("Erro ao gerar transação.");
         }
