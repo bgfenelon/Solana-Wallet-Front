@@ -261,8 +261,7 @@ export default function SwapPage(): JSX.Element {
       setAmount("");
       setQuoteInfo({});
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Erro no swap");
+      console.error("Erro no swap:", err);
     } finally {
       setLoading(false);
     }
