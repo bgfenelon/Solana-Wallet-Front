@@ -219,8 +219,34 @@ export default function SendPage() {
       alert("Transaction sent: " + data.signature);
       setAmount("");
     } catch (err: any) {
-      setError(err.message || "Unexpected error.");
-    }
+  console.error("SEND ERROR:", err);
+
+  const rawMessage = err?.message?.toLowerCase?.() || "";
+
+  if (rawMessage.includes("insufficient funds for rent")) {
+    setError(
+      "❌ You don’t have enough SOL to cover the network rent fee. Please add a small amount of SOL and try again."
+    );
+    return;
+  }
+
+  if (rawMessage.includes("insufficient")) {
+    setError("❌ Insufficient balance to complete this transaction.");
+    return;
+  }
+
+  if (rawMessage.includes("simulation failed")) {
+    setError("❌ Transaction simulation failed. Please try again in a few seconds.");
+    return;
+  }
+
+  if (rawMessage.includes("blockhash")) {
+    setError("❌ Network is busy right now. Please try again.");
+    return;
+  }
+
+  setError("❌ Something went wrong while sending the transaction. Please try again.");
+}
   }
 
   /* =====================================================
