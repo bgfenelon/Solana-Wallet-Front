@@ -216,17 +216,30 @@ export default function SwapPage(): JSX.Element {
           quote,
         }),
       });
-
-      if (!swapRes.ok) {
-        const txt = await swapRes.text();
-        console.error("Swap backend error:", txt);
-        throw new Error("Erro ao gerar transação no backend");
-      }
-
+      
       const swapJson = await swapRes.json();
-      if (!swapJson.swapTransaction) {
-        console.error("swap/jupiter returned:", swapJson);
-        throw new Error("Erro ao gerar transação.");
+            // Verifica se o status HTTP é 200 (OK) ou 201 (Created)
+      if (swapRes.status === 200 || swapRes.status === 201) {
+        // 1. Alerta simples (para fins de teste ou ambientes não-UI)
+        alert("✅ Transação de Swap Criada com Sucesso!");
+
+        // 2. Se estiver em um ambiente web moderno (como React, Vue, etc.),
+        // você deve usar uma biblioteca de toast/notificação (ex: react-toastify, sweetalert)
+        // Exemplo: showToast('success', 'Swap transaction successfully generated!');
+  
+      } else {
+
+        if (!swapRes.ok) {
+          const txt = await swapRes.text();
+          console.error("Swap backend error:", txt);
+          throw new Error("Erro ao gerar transação no backend");
+        }
+
+        const swapJson = await swapRes.json();
+        if (!swapJson.swapTransaction) {
+          console.error("swap/jupiter returned:", swapJson);
+          throw new Error("Erro ao gerar transação.");
+        }
       }
 
       // 3) SIGN locally
