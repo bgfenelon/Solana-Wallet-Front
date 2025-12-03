@@ -222,7 +222,7 @@ export default function SwapPage(): JSX.Element {
       if (swapRes.status === 200 || swapRes.status === 201) {
         // 1. Alerta simples (para fins de teste ou ambientes não-UI)
         alert("✅ Transação de Swap Criada com Sucesso!");
-
+        setError("");
         // 2. Se estiver em um ambiente web moderno (como React, Vue, etc.),
         // você deve usar uma biblioteca de toast/notificação (ex: react-toastify, sweetalert)
         // Exemplo: showToast('success', 'Swap transaction successfully generated!');
