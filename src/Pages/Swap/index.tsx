@@ -13,7 +13,9 @@ import bs58 from "bs58";
 /* ------------------------------------------
    CONFIGURAÇÕES
 ------------------------------------------- */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SOL_MINT = "So11111111111111111111111111111111111111112";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://node-veilfi-jtae.onrender.com";
@@ -108,7 +110,7 @@ export default function SwapPage(): JSX.Element {
     try {
       setIsGettingQuote(true);
 
-      const res = await fetch(`${BACKEND_URL}/jupiter`, {
+      const res = await fetch(`${BACKEND_URL}/quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -197,7 +199,7 @@ export default function SwapPage(): JSX.Element {
       if (!quote.outAmount) throw new Error("Liquidez insuficiente.");
 
       // 2) Request swap transaction from backend (backend will call Jupiter /swap and return swapTransaction base64)
-      const swapRes = await fetch(`${BACKEND_URL}/swap/jupiter`, {
+      const swapRes = await fetch(`${BACKEND_URL}/swap`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
