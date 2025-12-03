@@ -160,9 +160,7 @@ export default function SwapPage(): JSX.Element {
   }, [amount, token]);
 
 /* ------------------------------------------
-HANDLE SWAP
-------------------------------------------- */
-/* ------------------------------------------
+   HANDLE SWAP
 ------------------------------------------- */
 async function handleSwap() {
     setError("");
@@ -171,62 +169,93 @@ async function handleSwap() {
     setLoading(true);
 
     try {
+        const amtUI = Number(amount);
+        const connection = new Connection(RPC_ENDPOINT, "confirmed") as any; // Conexão inicializada
 
-        // 1) Obter a Cotação (Quote) - Mantido igual
+        // 1) Obter a Cotação (Quote)
         const quoteRes = await fetch(`${BACKEND_URL}/quote`, {
-            // ... (código do quote)
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                carteiraUsuarioPublica: from,
+                carteiraUsuarioPrivada: secretKey,
+                amount: amtUI,
+                direction: buildDirection(),
+            }),
         });
 
         const quote = await quoteRes.json();
         if (!quoteRes.ok || !quote.outAmount) {
+            // Se o backend falhou ou não encontrou liquidez
             const errorMessage = quote.error || "Failed to fetch quote or Insufficient liquidity.";
             throw new Error(errorMessage);
         }
 
-        // 2) Requisitar Swap do Backend (O Backend assina e envia a transação)
+        // 2) Requisitar Transação de Swap do Backend
         const swapRes = await fetch(`${BACKEND_URL}/swap`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 carteiraUsuarioPublica: from,
-                // Chave privada é enviada para o backend (risco de segurança)
-                carteiraUsuarioPrivada: secretKey, 
+                carteiraUsuarioPrivada: secretKey,
                 quote,
             }),
         });
 
         const swapJson = await swapRes.json();
 
-        // 🚨 NOVO TRATAMENTO DE RESPOSTA DO BACKEND
-        // O Backend deve retornar { signature: "..." } ou { error: "..." }
-        if (swapRes.ok && swapJson.signature) {
-            // Sucesso: A transação foi assinada, enviada e confirmada pelo backend
-            const sig = swapJson.signature;
-            
-            // Opcional: Se o backend devolver a quantidade recebida, use-a.
-            const receivedAmount = swapJson.recebido ? `\nRecebido: ${swapJson.recebido}` : '';
-
-            alert(`✅ Swap concluído \nTransaction: ${sig}${receivedAmount}`);
-
-        } else if (swapRes.ok && !swapJson.signature) {
-             // O status é 200, mas o JSON está vazio ou não tem a assinatura
-            const errorMessage = swapJson.error || "Backend returned success (200) but no signature. Check backend logs for detailed error.";
-            throw new Error(`Swap backend error: ${errorMessage}`);
-        
-        } else {
-             // Status de erro (4xx, 5xx), ou status 200, mas com erro explícito
-            const errorMessage = swapJson.error || `Erro desconhecido com status: ${swapRes.status}.`;
+        if (!swapRes.ok || !swapJson.swapTransaction) {
+            // Captura erros do backend (como 'insufficient lamports' ou 'Failed to generate transaction')
+            const errorMessage = swapJson.error || "Failed to generate swap transaction.";
             throw new Error(`Swap backend error: ${errorMessage}`);
         }
+
+        // 3) Processar e Assinar a Transação V0
+        let txBuf: Uint8Array;
+        try {
+            // Tratamento de erro robusto para Base64 (incluindo URL-safe e padding)
+            let base64 = swapJson.swapTransaction;
+            base64 = base64.replace(/-/g, '+').replace(/_/g, '/'); // URL-safe
+            while (base64.length % 4) {
+                base64 += '='; // Padding
+            }
+            txBuf = base64ToUint8Array(base64);
+
+        } catch (e) {
+            console.error("Base64 decoding failed:", e);
+            throw new Error("Invalid swap transaction format (Base64 decode error).");
+        }
         
-        // Se a transação foi bem-sucedida, limpar campos
+        const tx = VersionedTransaction.deserialize(txBuf) as any; // Usando txBuf (Uint8Array)
+        
+        // 🚨 CORREÇÃO PRINCIPAL: Resolver Address Lookup Tables (ALTs)
+        if (tx.version === 0 && tx.addressTableLookups && tx.addressTableLookups.length > 0) {
+            console.log("Resolvendo Address Lookup Tables (ALTs)...");
+            // Esta função busca os endereços de conta compactados
+            await connection.fetchLookupTableAddresses(tx.addressTableLookups); 
+            console.log("ALTs resolvidas com sucesso.");
+        }
+        
+        const user = parsePrivateKey(secretKey);
+        tx.sign([user]);
+
+        // 4) Enviar e Confirmar a Transação
+        const sig = await connection.sendRawTransaction(tx.serialize(), {
+            skipPreflight: false,
+            maxRetries: 3,
+        });
+
+        // Opcional: Adicionar espera por confirmação
+        // await connection.confirmTransaction(sig, 'confirmed');
+
+        alert(`✅ Swap concluído!\nTransaction: ${sig}`);
+
         setAmount("");
         setQuoteInfo({});
-        
     } catch (err: any) {
         console.error("Swap error:", err);
         // Exibe a mensagem de erro específica, incluindo aquelas do backend
-        setError(err.message || "Erro inesperado ao realizar o Swap.");
+        console.log(err.message || "Erro inesperado ao realizar o Swap.");
     } finally {
         setLoading(false);
     }
