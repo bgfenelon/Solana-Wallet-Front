@@ -86,7 +86,7 @@ export const ErrorBox = styled.div`
 export const SucessBox = styled.div`
   background: rgba(60, 255, 0, 0.3);
   border: 1px solid rgba(26, 255, 0, 0.3);
-  color: #253c25ff;
+  color: #ffff;
   padding: 12px;
   border-radius: 10px;
   font-size: 14px;
