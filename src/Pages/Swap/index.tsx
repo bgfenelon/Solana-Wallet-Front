@@ -186,7 +186,7 @@ export default function SwapPage(): JSX.Element {
       const amtUI = Number(amount);
 
       // 1) GET QUOTE (via backend)
-      const quoteRes = await fetch(`${BACKEND_URL}/swap`, {
+      const quoteRes = await fetch(`${BACKEND_URL}/quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
