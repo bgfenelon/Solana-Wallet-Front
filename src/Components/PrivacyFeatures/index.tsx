@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { PrimaryButton } from "../../styles";
 import ModalCreate from "../ModalCreate";
-import ModalImport from "../ModalImport";
 import * as S from "./styles";
 import { Shield, Eye, Lock, Zap, Key, CheckCircle2 } from "lucide-react";
 
@@ -9,7 +8,6 @@ export function PrivacyFeatures() {
   const [open, setOpen] = useState(false);
 
   const [openCreate, setOpenCreate] = useState(false);
-  const [openImport, setOpenImport] = useState(false);
 
   const steps = [
     {
@@ -52,7 +50,7 @@ export function PrivacyFeatures() {
 
   return (
     <S.Section id="privacy">
-
+              <ModalCreate open={openCreate} onClose={() => setOpenCreate(false)} />
 
       <S.Container>
         <S.Header>
@@ -81,7 +79,7 @@ export function PrivacyFeatures() {
           <p>Join the future of private finance on Solana. Create your wallet in seconds and experience true financial privacy.</p>
 
           <S.BtnContainer>
-            <PrimaryButton onClick={() => setOpenCreate(false)}>
+            <PrimaryButton onClick={() => setOpenCreate(true)}>
               Create Wallet Now 
             </PrimaryButton>
             <S.LinkStyle to="/docs">
