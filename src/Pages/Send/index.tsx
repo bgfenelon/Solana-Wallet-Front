@@ -126,7 +126,7 @@ export default function SendPage() {
       }
 
       const VEIL_MINT = new PublicKey(
-        "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump"
+        "7CVaSUZJanCjcK3jZc87eF2iQkcesDF7c98titi8pump"
       );
 
       const tokenAccounts =

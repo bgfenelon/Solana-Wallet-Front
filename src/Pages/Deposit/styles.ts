@@ -14,7 +14,6 @@ export const PageContainer = styled.div`
   background: #020202;
   color: var(--foreground);
   display: flex;
-  justify-content: ;
   align-items: center;
   flex-direction: column;
   grid-template-rows: 80px 1fr;

@@ -15,7 +15,7 @@ export function Hero() {
 
 
   const copyToClipboard = async () => {
-    const text = "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump";
+    const text = "7CVaSUZJanCjcK3jZc87eF2iQkcesDF7c98titi8pump";
 
 
  try {
@@ -50,11 +50,10 @@ export function Hero() {
 
           <S.MainHeading>
             <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-ZVjMTys6STYDB0t4fhhg5UozJDxBAq.png" alt="" />
-              {/* <S.Contract onClick={copyToClipboard}>
+              <S.Contract onClick={copyToClipboard}>
             <Copy  size={18} className="glow-icon" />
-                         MUDAR AQUI 
-            <h6 onClick={()=>copyToClipboard()}>CA - VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump</h6>
-          </S.Contract> */}
+            <h6 onClick={()=>copyToClipboard()}>CA - 7CVaSUZJanCjcK3jZc87eF2iQkcesDF7c98titi8pump</h6>
+          </S.Contract>
             <h1><span >Private currency </span> <br />
             <span  className="primary">for everyone</span></h1>
             <br />
@@ -101,7 +100,7 @@ export function Hero() {
             
           </S.ContractLink>
                         {/* MUDAR AQUI PUMP FUN 
-          <S.ContractLink href="https://pump.fun/coin/VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump">
+          <S.ContractLink href="https://pump.fun/coin/7CVaSUZJanCjcK3jZc87eF2iQkcesDF7c98titi8pump">
             <img src={pumpf} />
             
           </S.ContractLink>

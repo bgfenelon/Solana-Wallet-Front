@@ -5,6 +5,6 @@ export const TOKENS = {
   },
   TEST: {
     symbol: "TEST",
-    mint: "VSKXrgwu5mtbdSZS7Au81p1RgLQupWwYXX1L2cWpump" // sua mint do token TEST
+    mint: "7CVaSUZJanCjcK3jZc87eF2iQkcesDF7c98titi8pump" // sua mint do token TEST
   }
 };
